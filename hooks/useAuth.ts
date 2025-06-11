@@ -24,27 +24,38 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let mounted = true;
+
     // Get initial session
     const getInitialSession = async () => {
       try {
+        console.log('🔍 Checking initial session...');
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error('Error getting session:', error);
-          setLoading(false);
+          console.error('❌ Error getting session:', error);
+          if (mounted) {
+            setLoading(false);
+          }
           return;
         }
 
-        setSession(session);
-        setUser(session?.user ?? null);
+        console.log('📱 Initial session:', session ? 'Found' : 'None');
+        
+        if (mounted) {
+          setSession(session);
+          setUser(session?.user ?? null);
 
-        if (session?.user) {
-          await fetchUserProfile(session.user.id);
+          if (session?.user) {
+            await fetchUserProfile(session.user.id);
+          }
         }
       } catch (error) {
-        console.error('Error in getInitialSession:', error);
+        console.error('❌ Error in getInitialSession:', error);
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
@@ -53,26 +64,32 @@ export function useAuth() {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
+        console.log('🔄 Auth state changed:', event, session?.user?.email);
         
-        setSession(session);
-        setUser(session?.user ?? null);
+        if (mounted) {
+          setSession(session);
+          setUser(session?.user ?? null);
 
-        if (session?.user) {
-          await fetchUserProfile(session.user.id);
-        } else {
-          setProfile(null);
+          if (session?.user) {
+            await fetchUserProfile(session.user.id);
+          } else {
+            setProfile(null);
+          }
+
+          setLoading(false);
         }
-
-        setLoading(false);
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const fetchUserProfile = async (userId: string) => {
     try {
+      console.log('👤 Fetching user profile for:', userId);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -80,37 +97,41 @@ export function useAuth() {
         .single();
 
       if (error) {
-        console.error('Error fetching profile:', error);
+        console.error('❌ Error fetching profile:', error);
         return;
       }
 
+      console.log('✅ Profile fetched:', data?.full_name);
       setProfile(data);
     } catch (error) {
-      console.error('Error in fetchUserProfile:', error);
+      console.error('❌ Error in fetchUserProfile:', error);
     }
   };
 
   const signOut = async () => {
     try {
+      console.log('🚪 Signing out...');
       const { error } = await supabase.auth.signOut();
       if (error) {
-        console.error('Error signing out:', error);
+        console.error('❌ Error signing out:', error);
+      } else {
+        console.log('✅ Signed out successfully');
       }
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.error('❌ Error signing out:', error);
     }
   };
 
   const switchToPatientMode = () => {
     // This would typically update the user's role in the database
     // For now, we'll just log the action
-    console.log('Switch to patient mode requested');
+    console.log('🔄 Switch to patient mode requested');
   };
 
   const switchToDoctorMode = () => {
     // This would typically update the user's role in the database
     // For now, we'll just log the action
-    console.log('Switch to doctor mode requested');
+    console.log('🔄 Switch to doctor mode requested');
   };
 
   return {

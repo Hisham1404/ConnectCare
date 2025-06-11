@@ -141,18 +141,32 @@ export default function WelcomeScreen() {
             </View>
 
             <View style={styles.credentialsBox}>
-              <Text style={styles.credentialsTitle}>📧 Test Credentials</Text>
-              <View style={styles.credentialItem}>
-                <Text style={styles.credentialLabel}>Email:</Text>
-                <Text style={styles.credentialValue}>doctor@connectcare.ai</Text>
-              </View>
-              <View style={styles.credentialItem}>
-                <Text style={styles.credentialLabel}>Password:</Text>
-                <Text style={styles.credentialValue}>demo123456</Text>
-              </View>
+              <Text style={styles.credentialsTitle}>📧 Authentication Available</Text>
               <Text style={styles.credentialsNote}>
-                * Use these credentials when authentication is re-enabled
+                Create your account or sign in to access the full platform
               </Text>
+              
+              <View style={styles.authButtonsContainer}>
+                <TouchableOpacity
+                  style={styles.authButton}
+                  onPress={() => {
+                    console.log('Navigating to auth');
+                    router.push('/auth');
+                  }}
+                >
+                  <Text style={styles.authButtonText}>Get Started</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={styles.authSecondaryButton}
+                  onPress={() => {
+                    console.log('Navigating to sign in');
+                    router.push('/auth/sign-in');
+                  }}
+                >
+                  <Text style={styles.authSecondaryButtonText}>Sign In</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </View>
@@ -412,42 +426,55 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   credentialsBox: {
-    backgroundColor: `${Colors.success}${Colors.opacity.light}`,
+    backgroundColor: `${Colors.accent}${Colors.opacity.light}`,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: `${Colors.success}${Colors.opacity.medium}`,
+    borderColor: `${Colors.accent}${Colors.opacity.medium}`,
   },
   credentialsTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: Colors.success,
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  credentialItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    color: Colors.accent,
     marginBottom: 8,
-  },
-  credentialLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.success,
-  },
-  credentialValue: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: Colors.success,
-    fontFamily: 'monospace',
+    textAlign: 'center',
   },
   credentialsNote: {
-    fontSize: 11,
-    color: Colors.success,
+    fontSize: 12,
+    color: Colors.accent,
     textAlign: 'center',
-    marginTop: 8,
-    fontStyle: 'italic',
+    marginBottom: 16,
+    lineHeight: 16,
+  },
+  authButtonsContainer: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  authButton: {
+    flex: 1,
+    backgroundColor: Colors.accent,
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  authButtonText: {
+    color: Colors.surface,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  authSecondaryButton: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.accent,
+  },
+  authSecondaryButtonText: {
+    color: Colors.accent,
+    fontSize: 12,
+    fontWeight: '600',
   },
   statsSection: {
     paddingHorizontal: 24,
