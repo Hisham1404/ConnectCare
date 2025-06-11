@@ -210,7 +210,7 @@ export default function DailyCheckinScreen() {
       
       setIsProcessing(true);
       
-      setTimeout(async () => {
+      setTimeout(() => {
         setIsProcessing(false);
         if (currentQuestion < questions.length - 1) {
           setCurrentQuestion(prev => prev + 1);
@@ -247,7 +247,6 @@ export default function DailyCheckinScreen() {
       }
     }
   };
-
   const handleTextSubmit = () => {
     if (textInput.trim()) {
       setIsProcessing(true);
@@ -951,6 +950,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  // Voice Mode Styles
   voiceModeContainer: {
     position: 'absolute',
     top: 0,
@@ -983,7 +983,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     borderRadius: 1000,
     borderWidth: 2,
-    borderColor: 'rgba(59, 130, 246, 0.3)',
+    borderColor: `${Colors.primary}30`,
   },
   voiceOrb: {
     width: 200,
@@ -997,10 +997,10 @@ const styles = StyleSheet.create({
     width: 200,
     height: 200,
     borderRadius: 100,
-    backgroundColor: 'rgba(59, 130, 246, 0.8)',
+    backgroundColor: `${Colors.primary}CC`,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#3b82f6',
+    shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.4,
     shadowRadius: 24,
@@ -1012,7 +1012,7 @@ const styles = StyleSheet.create({
   },
   voiceStatusText: {
     fontSize: 18,
-    color: '#ffffff',
+    color: Colors.surface,
     textAlign: 'center',
     fontWeight: '500',
     marginBottom: 20,
@@ -1040,7 +1040,7 @@ const styles = StyleSheet.create({
   },
   voiceQuestionText: {
     fontSize: 16,
-    color: '#ffffff',
+    color: Colors.surface,
     textAlign: 'center',
     lineHeight: 24,
     fontWeight: '500',
