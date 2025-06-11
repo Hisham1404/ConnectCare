@@ -22,19 +22,23 @@ export default function FeedbackButton({
   const scaleValue = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
-    if (scaleEffect) {
+    if (scaleEffect && !disabled) {
       Animated.spring(scaleValue, {
         toValue: 0.95,
         useNativeDriver: true,
+        tension: 300,
+        friction: 10,
       }).start();
     }
   };
 
   const handlePressOut = () => {
-    if (scaleEffect) {
+    if (scaleEffect && !disabled) {
       Animated.spring(scaleValue, {
         toValue: 1,
         useNativeDriver: true,
+        tension: 300,
+        friction: 10,
       }).start();
     }
   };
@@ -76,6 +80,8 @@ export default function FeedbackButton({
       disabled={disabled}
       style={[style, disabled && styles.disabled]}
       activeOpacity={0.8}
+      accessible={true}
+      accessibilityRole="button"
     >
       <Animated.View style={{ transform: [{ scale: scaleValue }] }}>
         {children}

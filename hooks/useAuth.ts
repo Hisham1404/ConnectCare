@@ -24,6 +24,8 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let mounted = true;
+
     // Get initial session
     const getInitialSession = async () => {
       try {
@@ -31,20 +33,26 @@ export function useAuth() {
         
         if (error) {
           console.error('Error getting session:', error);
-          setLoading(false);
+          if (mounted) {
+            setLoading(false);
+          }
           return;
         }
 
-        setSession(session);
-        setUser(session?.user ?? null);
+        if (mounted) {
+          setSession(session);
+          setUser(session?.user ?? null);
 
-        if (session?.user) {
-          await fetchUserProfile(session.user.id);
+          if (session?.user) {
+            await fetchUserProfile(session.user.id);
+          }
         }
       } catch (error) {
         console.error('Error in getInitialSession:', error);
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
@@ -55,20 +63,25 @@ export function useAuth() {
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
         
-        setSession(session);
-        setUser(session?.user ?? null);
+        if (mounted) {
+          setSession(session);
+          setUser(session?.user ?? null);
 
-        if (session?.user) {
-          await fetchUserProfile(session.user.id);
-        } else {
-          setProfile(null);
+          if (session?.user) {
+            await fetchUserProfile(session.user.id);
+          } else {
+            setProfile(null);
+          }
+
+          setLoading(false);
         }
-
-        setLoading(false);
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const fetchUserProfile = async (userId: string) => {
