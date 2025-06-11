@@ -8,10 +8,13 @@ import {
   Dimensions,
   Platform,
   TextInput,
+  ScrollView,
 } from 'react-native';
-import { Mic, Bot, MicOff, Volume2, VolumeX, Heart, Headphones, Type, X, Play } from 'lucide-react-native';
+import { Mic, Bot, MicOff, Volume2, VolumeX, Heart, Headphones, Type, X, Play, MessageCircle, Phone, PhoneOff } from 'lucide-react-native';
 import { Colors } from '../../constants/Colors';
 import FeedbackButton from '../../components/ui/FeedbackButton';
+import ConversationalAgentChat from '../../components/chat/ConversationalAgentChat';
+import { useAuth } from '../../hooks/useAuth';
 
 const { width, height } = Dimensions.get('window');
 
@@ -24,16 +27,20 @@ interface Message {
   duration?: number;
 }
 
+type ChatMode = 'welcome' | 'voice' | 'text' | 'conversation';
+
 export default function DailyCheckinScreen() {
+  const { profile } = useAuth();
+  const [chatMode, setChatMode] = useState<ChatMode>('welcome');
   const [isRecording, setIsRecording] = useState(false);
-  const [isVoiceMode, setIsVoiceMode] = useState(false);
   const [isSpeakerOn, setIsSpeakerOn] = useState(true);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [showTextInput, setShowTextInput] = useState(false);
   const [textInput, setTextInput] = useState('');
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [hasStarted, setHasStarted] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [conversationTranscript, setConversationTranscript] = useState('');
   
   const recordingTimer = useRef<NodeJS.Timeout>();
   const pulseAnimation = useRef(new Animated.Value(1)).current;
@@ -51,6 +58,15 @@ export default function DailyCheckinScreen() {
     "Have you experienced any unusual symptoms?",
     "Thank you for completing your daily check-in!"
   ];
+
+  // Mock patient context for the conversational agent
+  const patientContext = {
+    patient_name: profile?.full_name || "Patient",
+    recovery_stage: "Week 2 post-surgery",
+    medications: ["Metoprolol 50mg", "Aspirin 81mg", "Atorvastatin 20mg"],
+    recent_symptoms: ["mild pain", "fatigue"],
+    pain_level: 3
+  };
 
   useEffect(() => {
     // Gentle breathing animation for the central icon
@@ -71,7 +87,7 @@ export default function DailyCheckinScreen() {
   }, []);
 
   useEffect(() => {
-    if (isVoiceMode) {
+    if (chatMode === 'voice') {
       // Animate to voice mode
       Animated.timing(voiceModeAnimation, {
         toValue: 1,
@@ -86,266 +102,125 @@ export default function DailyCheckinScreen() {
         useNativeDriver: false,
       }).start();
     }
-  }, [isVoiceMode]);
+  }, [chatMode]);
 
-  useEffect(() => {
-    if (isRecording) {
-      // Voice orb animation during recording
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(voiceOrbAnimation, {
-            toValue: 1.2,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(voiceOrbAnimation, {
-            toValue: 0.8,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
-
-      // Ripple effect
-      Animated.loop(
-        Animated.timing(rippleAnimation, {
-          toValue: 1,
-          duration: 2000,
-          useNativeDriver: true,
-        })
-      ).start();
-    } else {
-      voiceOrbAnimation.setValue(1);
-      rippleAnimation.setValue(0);
-    }
-  }, [isRecording]);
-
-  useEffect(() => {
-    if (isProcessing) {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(fadeAnimation, {
-            toValue: 0.5,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(fadeAnimation, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
-    } else {
-      fadeAnimation.setValue(1);
-    }
-  }, [isProcessing]);
-
-  const handleStartCheckin = () => {
-    setHasStarted(true);
-    setIsVoiceMode(true);
+  const handleStartVoiceCheckin = () => {
+    setChatMode('conversation');
   };
 
-  const handleVoiceRecording = () => {
-    if (Platform.OS === 'web') {
-      console.log('Voice recording placeholder - would work on mobile devices');
+  const handleStartTextCheckin = () => {
+    setChatMode('text');
+    setCurrentQuestion(0);
+    setMessages([{
+      id: '1',
+      text: questions[0],
+      sender: 'ai',
+      timestamp: new Date(),
+    }]);
+  };
+
+  const handleConversationStart = (conversationId: string) => {
+    console.log('Conversation started with ID:', conversationId);
+    // You can store the conversation ID for tracking
+  };
+
+  const handleConversationEnd = (transcript: string, duration: number) => {
+    console.log('Conversation ended:', { transcript, duration });
+    setConversationTranscript(transcript);
+    
+    // Add the conversation summary to messages
+    if (transcript) {
+      const summaryMessage: Message = {
+        id: Date.now().toString(),
+        text: `Voice check-in completed (${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, '0')})\n\nTranscript: ${transcript}`,
+        sender: 'ai',
+        timestamp: new Date(),
+        isVoice: true,
+        duration: duration
+      };
+      setMessages(prev => [...prev, summaryMessage]);
     }
     
-    if (!isRecording) {
-      setIsRecording(true);
-      setRecordingDuration(0);
-      
-      recordingTimer.current = setInterval(() => {
-        setRecordingDuration(prev => prev + 1);
-      }, 1000);
-    } else {
-      setIsRecording(false);
-      if (recordingTimer.current) {
-        clearInterval(recordingTimer.current);
-      }
-      
-      setIsProcessing(true);
-      
-      setTimeout(() => {
-        setIsProcessing(false);
-        if (currentQuestion < questions.length - 1) {
-          setCurrentQuestion(prev => prev + 1);
-        } else {
-          setIsVoiceMode(false);
-          setHasStarted(false);
-          setCurrentQuestion(0);
-        }
-        setRecordingDuration(0);
-      }, 2000);
-    }
+    // Return to welcome mode
+    setChatMode('welcome');
+  };
+
+  const handleConversationError = (error: string) => {
+    console.error('Conversation error:', error);
+    
+    // Add error message
+    const errorMessage: Message = {
+      id: Date.now().toString(),
+      text: `Sorry, there was an issue with the voice check-in: ${error}. Please try again or use text mode.`,
+      sender: 'ai',
+      timestamp: new Date(),
+    };
+    setMessages(prev => [...prev, errorMessage]);
+    
+    // Return to welcome mode
+    setChatMode('welcome');
   };
 
   const handleTextSubmit = () => {
     if (textInput.trim()) {
+      // Add user message
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        text: textInput.trim(),
+        sender: 'user',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, userMessage]);
+      
       setIsProcessing(true);
       setTextInput('');
-      setShowTextInput(false);
       
       setTimeout(() => {
         setIsProcessing(false);
+        
         if (currentQuestion < questions.length - 1) {
-          setCurrentQuestion(prev => prev + 1);
+          const nextQuestion = currentQuestion + 1;
+          setCurrentQuestion(nextQuestion);
+          
+          const aiMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            text: questions[nextQuestion],
+            sender: 'ai',
+            timestamp: new Date(),
+          };
+          setMessages(prev => [...prev, aiMessage]);
         } else {
-          setHasStarted(false);
-          setCurrentQuestion(0);
+          // End of questions
+          const finalMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            text: "Thank you for completing your daily check-in! Your responses have been recorded and your healthcare team will be notified if any concerns arise.",
+            sender: 'ai',
+            timestamp: new Date(),
+          };
+          setMessages(prev => [...prev, finalMessage]);
+          
+          // Return to welcome after a delay
+          setTimeout(() => {
+            setChatMode('welcome');
+            setMessages([]);
+            setCurrentQuestion(0);
+          }, 3000);
         }
       }, 1500);
     }
   };
 
-  const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const resetCheckin = () => {
+  const resetToWelcome = () => {
+    setChatMode('welcome');
+    setMessages([]);
     setCurrentQuestion(0);
-    setIsRecording(false);
-    setIsProcessing(false);
-    setShowTextInput(false);
     setTextInput('');
-    setRecordingDuration(0);
-    setIsVoiceMode(false);
-    setHasStarted(false);
+    setIsProcessing(false);
+    setConversationTranscript('');
   };
 
-  const exitVoiceMode = () => {
-    setIsVoiceMode(false);
-    setIsRecording(false);
-    setHasStarted(false);
-    if (recordingTimer.current) {
-      clearInterval(recordingTimer.current);
-    }
-    setRecordingDuration(0);
-  };
-
-  // Voice Mode Full Screen Interface
-  if (isVoiceMode) {
-    return (
-      <Animated.View style={[
-        styles.voiceModeContainer,
-        {
-          backgroundColor: voiceModeAnimation.interpolate({
-            inputRange: [0, 1],
-            outputRange: ['rgba(0,0,0,0)', 'rgba(0,0,0,0.95)'],
-          }),
-        }
-      ]}>
-        {/* Exit Button */}
-        <FeedbackButton 
-          onPress={exitVoiceMode}
-          style={styles.exitButton}
-        >
-          <X color={Colors.surface} size={24} />
-        </FeedbackButton>
-
-        {/* Voice Animation Container */}
-        <View style={styles.voiceModeContent}>
-          {/* Ripple Effects */}
-          {isRecording && (
-            <>
-              {[...Array(3)].map((_, i) => (
-                <Animated.View 
-                  key={i}
-                  style={[
-                    styles.voiceRipple,
-                    {
-                      width: 200 + (i * 60),
-                      height: 200 + (i * 60),
-                      opacity: rippleAnimation.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0.6 - (i * 0.2), 0],
-                      }),
-                      transform: [{
-                        scale: rippleAnimation.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [1, 2 + (i * 0.3)],
-                        }),
-                      }],
-                    }
-                  ]} 
-                />
-              ))}
-            </>
-          )}
-
-          {/* Central Voice Orb */}
-          <Animated.View style={[
-            styles.voiceOrb,
-            {
-              transform: [{ scale: voiceOrbAnimation }],
-              opacity: fadeAnimation,
-            }
-          ]}>
-            <FeedbackButton
-              onPress={handleVoiceRecording}
-              style={styles.voiceOrbButton}
-              hapticFeedback={true}
-            >
-              {isProcessing ? (
-                <Heart color={Colors.surface} size={48} />
-              ) : isRecording ? (
-                <MicOff color={Colors.surface} size={48} />
-              ) : (
-                <Mic color={Colors.surface} size={48} />
-              )}
-            </FeedbackButton>
-          </Animated.View>
-
-          {/* Voice Status Text */}
-          <Animated.View style={[
-            styles.voiceStatusContainer,
-            { opacity: fadeAnimation }
-          ]}>
-            <Text style={styles.voiceStatusText}>
-              {isProcessing ? 'Processing your response...' :
-               isRecording ? `Recording... ${formatDuration(recordingDuration)}` :
-               'Tap to speak your answer'}
-            </Text>
-            
-            {/* Voice Waveform */}
-            {isRecording && (
-              <View style={styles.voiceWaveform}>
-                {[...Array(5)].map((_, i) => (
-                  <Animated.View 
-                    key={i} 
-                    style={[
-                      styles.voiceWaveBar,
-                      {
-                        height: rippleAnimation.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [6, Math.random() * 30 + 10],
-                        }),
-                      }
-                    ]} 
-                  />
-                ))}
-              </View>
-            )}
-          </Animated.View>
-
-          {/* Question Display in Voice Mode */}
-          <Animated.View style={[
-            styles.voiceQuestionContainer,
-            { opacity: fadeAnimation }
-          ]}>
-            <Text style={styles.voiceQuestionText}>
-              {questions[currentQuestion]}
-            </Text>
-          </Animated.View>
-        </View>
-      </Animated.View>
-    );
-  }
-
-  // Initial Start Check-in Interface
-  if (!hasStarted) {
+  // Render different modes
+  if (chatMode === 'conversation') {
     return (
       <View style={styles.container}>
         {/* Header */}
@@ -355,86 +230,108 @@ export default function DailyCheckinScreen() {
               <Bot color={Colors.accent} size={20} />
             </View>
             <View>
-              <Text style={styles.headerTitle}>Daily Check-in</Text>
-              <Text style={styles.headerSubtitle}>Voice-first health monitoring</Text>
+              <Text style={styles.headerTitle}>Voice Check-in</Text>
+              <Text style={styles.headerSubtitle}>AI-powered health conversation</Text>
             </View>
           </View>
           
           <FeedbackButton 
-            onPress={() => setIsSpeakerOn(!isSpeakerOn)}
-            style={styles.speakerButton}
+            onPress={resetToWelcome}
+            style={styles.exitButton}
           >
-            {isSpeakerOn ? (
-              <Volume2 color={Colors.accent} size={20} />
-            ) : (
-              <VolumeX color={Colors.textSecondary} size={20} />
-            )}
+            <X color={Colors.textSecondary} size={20} />
           </FeedbackButton>
         </View>
 
-        {/* Main Content - Start Check-in */}
-        <View style={styles.startCheckinContainer}>
-          <View style={styles.startCheckinContent}>
-            <Text style={styles.startCheckinTitle}>Ready for your daily check-in?</Text>
-            <Text style={styles.startCheckinSubtitle}>
-              I'll ask you a few questions about how you're feeling today. This usually takes about 2-3 minutes.
-            </Text>
-            
-            {/* Large Start Button */}
-            <FeedbackButton
-              onPress={handleStartCheckin}
-              style={styles.startCheckinButton}
-              hapticFeedback={true}
-            >
-              <Animated.View style={[
-                styles.startButtonInner,
-                { 
-                  transform: [
-                    { scale: breathingAnimation }
-                  ] 
-                }
-              ]}>
-                <Play color={Colors.surface} size={40} />
-              </Animated.View>
-              <Text style={styles.startButtonText}>Start Check-in</Text>
-            </FeedbackButton>
+        {/* Conversational Agent Chat */}
+        <ConversationalAgentChat
+          patientId={profile?.id}
+          patientContext={patientContext}
+          onConversationStart={handleConversationStart}
+          onConversationEnd={handleConversationEnd}
+          onError={handleConversationError}
+        />
+      </View>
+    );
+  }
 
-            {/* Features List */}
-            <View style={styles.featuresList}>
-              <View style={styles.featureItem}>
-                <Mic color={Colors.accent} size={16} />
-                <Text style={styles.featureText}>Voice-powered responses</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Heart color={Colors.heartRate} size={16} />
-                <Text style={styles.featureText}>Health insights & analysis</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Bot color={Colors.success} size={16} />
-                <Text style={styles.featureText}>AI-powered recommendations</Text>
-              </View>
+  if (chatMode === 'text') {
+    return (
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <View style={styles.aiHeaderAvatar}>
+              <MessageCircle color={Colors.accent} size={20} />
+            </View>
+            <View>
+              <Text style={styles.headerTitle}>Text Check-in</Text>
+              <Text style={styles.headerSubtitle}>Question {currentQuestion + 1} of {questions.length}</Text>
             </View>
           </View>
+          
+          <FeedbackButton 
+            onPress={resetToWelcome}
+            style={styles.exitButton}
+          >
+            <X color={Colors.textSecondary} size={20} />
+          </FeedbackButton>
+        </View>
 
-          {/* Alternative Options */}
-          <View style={styles.alternativeOptions}>
-            <FeedbackButton
-              onPress={() => {
-                setHasStarted(true);
-                setShowTextInput(true);
-              }}
-              style={styles.alternativeButton}
+        {/* Messages */}
+        <ScrollView style={styles.messagesContainer} showsVerticalScrollIndicator={false}>
+          {messages.map((message) => (
+            <View
+              key={message.id}
+              style={[
+                styles.messageContainer,
+                message.sender === 'user' ? styles.userMessage : styles.aiMessage
+              ]}
             >
-              <Type color={Colors.textSecondary} size={20} />
-              <Text style={styles.alternativeButtonText}>Use Text Instead</Text>
-            </FeedbackButton>
-          </View>
+              <Text style={[
+                styles.messageText,
+                message.sender === 'user' ? styles.userMessageText : styles.aiMessageText
+              ]}>
+                {message.text}
+              </Text>
+              <Text style={styles.messageTime}>
+                {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </Text>
+            </View>
+          ))}
+          
+          {isProcessing && (
+            <View style={[styles.messageContainer, styles.aiMessage]}>
+              <Text style={styles.aiMessageText}>Thinking...</Text>
+            </View>
+          )}
+        </ScrollView>
+
+        {/* Text Input */}
+        <View style={styles.textInputContainer}>
+          <TextInput
+            style={styles.textInput}
+            placeholder="Type your answer here..."
+            placeholderTextColor={Colors.textTertiary}
+            value={textInput}
+            onChangeText={setTextInput}
+            multiline
+            autoFocus
+          />
+          <FeedbackButton
+            onPress={handleTextSubmit}
+            disabled={!textInput.trim() || isProcessing}
+            style={[styles.submitButton, textInput.trim() && styles.submitButtonActive]}
+            hapticFeedback={true}
+          >
+            <Text style={styles.submitButtonText}>Send</Text>
+          </FeedbackButton>
         </View>
       </View>
     );
   }
 
-  // Normal Interface (when started but not in voice mode)
+  // Welcome Mode (Default)
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -444,126 +341,98 @@ export default function DailyCheckinScreen() {
             <Bot color={Colors.accent} size={20} />
           </View>
           <View>
-            <Text style={styles.headerTitle}>Daily Check-in</Text>
-            <Text style={styles.headerSubtitle}>Voice-first health monitoring</Text>
+            <Text style={styles.headerTitle}>AI Health Assistant</Text>
+            <Text style={styles.headerSubtitle}>Daily check-in & health monitoring</Text>
           </View>
         </View>
         
-        <TouchableOpacity 
-          style={styles.speakerButton}
+        <FeedbackButton 
           onPress={() => setIsSpeakerOn(!isSpeakerOn)}
+          style={styles.speakerButton}
         >
           {isSpeakerOn ? (
             <Volume2 color={Colors.accent} size={20} />
           ) : (
             <VolumeX color={Colors.textSecondary} size={20} />
           )}
-        </TouchableOpacity>
+        </FeedbackButton>
       </View>
 
-      {/* Main Content */}
-      <View style={styles.mainContent}>
-        {/* Central Reminder Display */}
-        <View style={styles.reminderContainer}>
-          <Text style={styles.reminderTitle}>Daily Health Check-in</Text>
-          <Text style={styles.reminderSubtitle}>Question {currentQuestion + 1} of {questions.length}</Text>
+      {/* Main Content - Welcome */}
+      <View style={styles.welcomeContainer}>
+        <View style={styles.welcomeContent}>
+          <Text style={styles.welcomeTitle}>Ready for your daily check-in?</Text>
+          <Text style={styles.welcomeSubtitle}>
+            Choose how you'd like to complete your health check-in today. I'll ask you about your symptoms, pain level, medications, and overall well-being.
+          </Text>
           
-          <Animated.View style={[
-            styles.questionContainer,
-            { opacity: fadeAnimation }
-          ]}>
-            <Text style={styles.questionText}>{questions[currentQuestion]}</Text>
-          </Animated.View>
-
-          {/* Progress Indicator */}
-          <View style={styles.progressContainer}>
-            <View style={styles.progressBar}>
-              <View style={[
-                styles.progressFill,
-                { width: `${((currentQuestion + 1) / questions.length) * 100}%` }
-              ]} />
-            </View>
-            <Text style={styles.progressText}>
-              {Math.round(((currentQuestion + 1) / questions.length) * 100)}% Complete
-            </Text>
-          </View>
-        </View>
-
-        {/* Central Voice Interface */}
-        <View style={styles.voiceInterface}>
-          {/* Main Voice Button */}
+          {/* Voice Check-in Option */}
           <FeedbackButton
-            onPress={handleVoiceRecording}
-            disabled={isProcessing}
-            style={[
-              styles.mainVoiceButton,
-              isRecording && styles.recordingButton,
-              isProcessing && styles.processingButton
-            ]}
+            onPress={handleStartVoiceCheckin}
+            style={styles.checkinOptionButton}
             hapticFeedback={true}
           >
             <Animated.View style={[
-              styles.voiceButtonInner,
+              styles.checkinOptionInner,
               { 
                 transform: [
                   { scale: breathingAnimation }
                 ] 
               }
             ]}>
-              {isProcessing ? (
-                <Heart color={Colors.surface} size={32} />
-              ) : (
-                <Mic color={Colors.surface} size={32} />
-              )}
+              <Phone color={Colors.surface} size={32} />
             </Animated.View>
+            <View style={styles.checkinOptionText}>
+              <Text style={styles.checkinOptionTitle}>Voice Check-in</Text>
+              <Text style={styles.checkinOptionSubtitle}>Natural conversation with AI</Text>
+            </View>
           </FeedbackButton>
 
-          {/* Status Text */}
-          <Text style={styles.statusText}>
-            Tap to speak your answer
-          </Text>
+          {/* Text Check-in Option */}
+          <FeedbackButton
+            onPress={handleStartTextCheckin}
+            style={[styles.checkinOptionButton, styles.textCheckinButton]}
+            hapticFeedback={true}
+          >
+            <View style={styles.checkinOptionInner}>
+              <MessageCircle color={Colors.accent} size={32} />
+            </View>
+            <View style={styles.checkinOptionText}>
+              <Text style={[styles.checkinOptionTitle, styles.textCheckinTitle]}>Text Check-in</Text>
+              <Text style={styles.checkinOptionSubtitle}>Type your responses</Text>
+            </View>
+          </FeedbackButton>
+
+          {/* Features List */}
+          <View style={styles.featuresList}>
+            <View style={styles.featureItem}>
+              <Heart color={Colors.heartRate} size={16} />
+              <Text style={styles.featureText}>Personalized health insights</Text>
+            </View>
+            <View style={styles.featureItem}>
+              <Bot color={Colors.success} size={16} />
+              <Text style={styles.featureText}>AI-powered analysis</Text>
+            </View>
+            <View style={styles.featureItem}>
+              <Headphones color={Colors.accent} size={16} />
+              <Text style={styles.featureText}>Natural conversation experience</Text>
+            </View>
+          </View>
         </View>
 
-        {/* Bottom Action Buttons */}
-        <View style={styles.bottomActions}>
-          <FeedbackButton
-            onPress={() => setShowTextInput(!showTextInput)}
-            style={styles.actionButton}
-          >
-            <Type color={Colors.textSecondary} size={20} />
-            <Text style={styles.actionButtonText}>Type Instead</Text>
-          </FeedbackButton>
-
-          <FeedbackButton
-            onPress={resetCheckin}
-            style={styles.actionButton}
-          >
-            <Headphones color={Colors.textSecondary} size={20} />
-            <Text style={styles.actionButtonText}>Start Over</Text>
-          </FeedbackButton>
-        </View>
-
-        {/* Text Input (when enabled) */}
-        {showTextInput && (
-          <Animated.View style={styles.textInputContainer}>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Type your answer here..."
-              placeholderTextColor={Colors.textTertiary}
-              value={textInput}
-              onChangeText={setTextInput}
-              multiline
-              autoFocus
-            />
-            <FeedbackButton
-              onPress={handleTextSubmit}
-              disabled={!textInput.trim()}
-              style={[styles.submitButton, textInput.trim() && styles.submitButtonActive]}
-              hapticFeedback={true}
-            >
-              <Text style={styles.submitButtonText}>Submit</Text>
-            </FeedbackButton>
-          </Animated.View>
+        {/* Recent Conversations */}
+        {conversationTranscript && (
+          <View style={styles.recentSection}>
+            <Text style={styles.recentTitle}>Recent Check-in</Text>
+            <View style={styles.recentCard}>
+              <Text style={styles.recentText} numberOfLines={3}>
+                {conversationTranscript}
+              </Text>
+              <Text style={styles.recentTime}>
+                {new Date().toLocaleDateString()}
+              </Text>
+            </View>
+          </View>
         )}
       </View>
     </View>
@@ -617,18 +486,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  startCheckinContainer: {
-    flex: 1,
-    justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingVertical: 40,
+  exitButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: `${Colors.textSecondary}${Colors.opacity.light}`,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  startCheckinContent: {
+  welcomeContainer: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingVertical: 32,
+  },
+  welcomeContent: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  startCheckinTitle: {
+  welcomeTitle: {
     fontSize: 28,
     fontWeight: '800',
     color: Colors.textPrimary,
@@ -636,7 +512,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     lineHeight: 36,
   },
-  startCheckinSubtitle: {
+  welcomeSubtitle: {
     fontSize: 16,
     color: Colors.textSecondary,
     textAlign: 'center',
@@ -644,31 +520,54 @@ const styles = StyleSheet.create({
     marginBottom: 48,
     paddingHorizontal: 20,
   },
-  startCheckinButton: {
+  checkinOptionButton: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 40,
-  },
-  startButtonInner: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
     backgroundColor: Colors.primary,
+    borderRadius: 20,
+    padding: 24,
+    marginBottom: 16,
+    width: '100%',
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 12,
+  },
+  textCheckinButton: {
+    backgroundColor: Colors.surface,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+  },
+  checkinOptionInner: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.4,
-    shadowRadius: 24,
-    elevation: 16,
-    marginBottom: 16,
+    marginRight: 20,
   },
-  startButtonText: {
-    fontSize: 18,
+  checkinOptionText: {
+    flex: 1,
+  },
+  checkinOptionTitle: {
+    fontSize: 20,
     fontWeight: '700',
-    color: Colors.primary,
+    color: Colors.surface,
+    marginBottom: 4,
+  },
+  textCheckinTitle: {
+    color: Colors.textPrimary,
+  },
+  checkinOptionSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
   },
   featuresList: {
     gap: 16,
+    marginTop: 40,
+    width: '100%',
   },
   featureItem: {
     flexDirection: 'row',
@@ -688,182 +587,105 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontWeight: '500',
   },
-  alternativeOptions: {
-    alignItems: 'center',
+  recentSection: {
+    marginTop: 32,
   },
-  alternativeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  recentTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    marginBottom: 12,
+  },
+  recentCard: {
     backgroundColor: Colors.surface,
     borderRadius: 16,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
+    padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
   },
-  alternativeButtonText: {
+  recentText: {
     fontSize: 14,
     color: Colors.textSecondary,
-    fontWeight: '600',
-  },
-  mainContent: {
-    flex: 1,
-    paddingHorizontal: 24,
-    justifyContent: 'space-between',
-  },
-  reminderContainer: {
-    alignItems: 'center',
-    paddingTop: 40,
-  },
-  reminderTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: Colors.textPrimary,
-    textAlign: 'center',
+    lineHeight: 20,
     marginBottom: 8,
   },
-  reminderSubtitle: {
-    fontSize: 16,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: 32,
+  recentTime: {
+    fontSize: 12,
+    color: Colors.textTertiary,
   },
-  questionContainer: {
+  messagesContainer: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+  },
+  messageContainer: {
+    marginBottom: 16,
+    maxWidth: '80%',
+  },
+  userMessage: {
+    alignSelf: 'flex-end',
+    backgroundColor: Colors.primary,
+    borderRadius: 20,
+    borderBottomRightRadius: 4,
+    padding: 16,
+  },
+  aiMessage: {
+    alignSelf: 'flex-start',
     backgroundColor: Colors.surface,
     borderRadius: 20,
-    padding: 24,
-    marginBottom: 32,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-    elevation: 8,
-    minHeight: 120,
-    justifyContent: 'center',
-  },
-  questionText: {
-    fontSize: 18,
-    color: Colors.textPrimary,
-    textAlign: 'center',
-    lineHeight: 26,
-    fontWeight: '500',
-  },
-  progressContainer: {
-    width: '100%',
-    alignItems: 'center',
-  },
-  progressBar: {
-    width: '80%',
-    height: 6,
-    backgroundColor: `${Colors.textSecondary}${Colors.opacity.light}`,
-    borderRadius: 3,
-    marginBottom: 8,
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: Colors.primary,
-    borderRadius: 3,
-  },
-  progressText: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    fontWeight: '500',
-  },
-  voiceInterface: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    position: 'relative',
-  },
-  mainVoiceButton: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: Colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 12,
-    marginBottom: 24,
-  },
-  recordingButton: {
-    backgroundColor: Colors.error,
-    shadowColor: Colors.error,
-  },
-  processingButton: {
-    backgroundColor: Colors.success,
-    shadowColor: Colors.success,
-  },
-  voiceButtonInner: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  statusText: {
-    fontSize: 16,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    fontWeight: '500',
-    marginBottom: 16,
-  },
-  bottomActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingBottom: 40,
-  },
-  actionButton: {
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: Colors.surface,
-    borderRadius: 16,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
+    borderBottomLeftRadius: 4,
+    padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
-    minWidth: 120,
   },
-  actionButtonText: {
+  messageText: {
+    fontSize: 16,
+    lineHeight: 22,
+    marginBottom: 4,
+  },
+  userMessageText: {
+    color: Colors.surface,
+  },
+  aiMessageText: {
+    color: Colors.textPrimary,
+  },
+  messageTime: {
     fontSize: 12,
-    color: Colors.textSecondary,
-    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.7)',
+    alignSelf: 'flex-end',
   },
   textInputContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 24,
-    right: 24,
+    flexDirection: 'row',
+    paddingHorizontal: 24,
+    paddingVertical: 16,
     backgroundColor: Colors.surface,
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-    elevation: 8,
+    borderTopWidth: 1,
+    borderTopColor: `${Colors.textSecondary}${Colors.opacity.light}`,
+    gap: 12,
+    alignItems: 'flex-end',
   },
   textInput: {
+    flex: 1,
     backgroundColor: Colors.background,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     fontSize: 16,
     color: Colors.textPrimary,
-    minHeight: 80,
-    textAlignVertical: 'top',
-    marginBottom: 16,
+    maxHeight: 100,
   },
   submitButton: {
     backgroundColor: Colors.textTertiary,
-    borderRadius: 12,
+    borderRadius: 20,
     paddingVertical: 12,
+    paddingHorizontal: 20,
+    justifyContent: 'center',
     alignItems: 'center',
   },
   submitButtonActive: {
@@ -873,100 +695,5 @@ const styles = StyleSheet.create({
     color: Colors.surface,
     fontSize: 16,
     fontWeight: '600',
-  },
-  // Voice Mode Styles
-  voiceModeContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 1000,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  exitButton: {
-    position: 'absolute',
-    top: 60,
-    right: 24,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1001,
-  },
-  voiceModeContent: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    width: '100%',
-  },
-  voiceRipple: {
-    position: 'absolute',
-    borderRadius: 1000,
-    borderWidth: 2,
-    borderColor: `${Colors.primary}30`,
-  },
-  voiceOrb: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  voiceOrbButton: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: `${Colors.primary}CC`,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 24,
-    elevation: 16,
-  },
-  voiceStatusContainer: {
-    alignItems: 'center',
-    marginBottom: 60,
-  },
-  voiceStatusText: {
-    fontSize: 18,
-    color: Colors.surface,
-    textAlign: 'center',
-    fontWeight: '500',
-    marginBottom: 20,
-  },
-  voiceWaveform: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    height: 40,
-  },
-  voiceWaveBar: {
-    width: 6,
-    backgroundColor: 'rgba(255,255,255,0.8)',
-    borderRadius: 3,
-  },
-  voiceQuestionContainer: {
-    position: 'absolute',
-    bottom: 100,
-    left: 24,
-    right: 24,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 20,
-    padding: 24,
-    backdropFilter: 'blur(10px)',
-  },
-  voiceQuestionText: {
-    fontSize: 16,
-    color: Colors.surface,
-    textAlign: 'center',
-    lineHeight: 24,
-    fontWeight: '500',
   },
 });
