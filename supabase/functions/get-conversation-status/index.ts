@@ -81,7 +81,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
         'x-pica-secret': PICA_SECRET_KEY,
         'x-pica-connection-key': PICA_ELEVENLABS_CONNECTION_KEY,
-        'x-pica-action-id': 'conn_mod_def::GCcb_iT9I0k::get_conversation_status_action_id' // You'll need to get the correct action ID
+        'x-pica-action-id': 'conn_mod_def::GCcb_iT9I0k::get_conversation_status'
       }
     })
 

@@ -407,15 +407,21 @@ export default function DailyCheckinScreen() {
           <View style={styles.featuresList}>
             <View style={styles.featureItem}>
               <Heart color={Colors.heartRate} size={16} />
-              <Text style={styles.featureText}>Personalized health insights</Text>
+              <View style={styles.featureTextContainer}>
+                <Text style={styles.featureText}>Personalized health insights</Text>
+              </View>
             </View>
             <View style={styles.featureItem}>
               <Bot color={Colors.success} size={16} />
-              <Text style={styles.featureText}>AI-powered analysis</Text>
+              <View style={styles.featureTextContainer}>
+                <Text style={styles.featureText}>AI-powered analysis</Text>
+              </View>
             </View>
             <View style={styles.featureItem}>
               <Headphones color={Colors.accent} size={16} />
-              <Text style={styles.featureText}>Natural conversation experience</Text>
+              <View style={styles.featureTextContainer}>
+                <Text style={styles.featureText}>Natural conversation experience</Text>
+              </View>
             </View>
           </View>
         </View>
@@ -425,9 +431,11 @@ export default function DailyCheckinScreen() {
           <View style={styles.recentSection}>
             <Text style={styles.recentTitle}>Recent Check-in</Text>
             <View style={styles.recentCard}>
-              <Text style={styles.recentText} numberOfLines={3}>
+              <View style={styles.recentTextContainer}>
+                <Text style={styles.recentText} numberOfLines={3}>
                 {conversationTranscript}
-              </Text>
+                </Text>
+              </View>
               <Text style={styles.recentTime}>
                 {new Date().toLocaleDateString()}
               </Text>
@@ -587,6 +595,10 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontWeight: '500',
   },
+  featureTextContainer: {
+    flex: 1,
+    justifyContent: 'center',
+  },
   recentSection: {
     marginTop: 32,
   },
@@ -611,6 +623,10 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     lineHeight: 20,
     marginBottom: 8,
+  },
+  recentTextContainer: {
+    flex: 1,
+    justifyContent: 'center',
   },
   recentTime: {
     fontSize: 12,
