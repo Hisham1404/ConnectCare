@@ -206,7 +206,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
         'x-pica-secret': PICA_SECRET_KEY,
         'x-pica-connection-key': PICA_ELEVENLABS_CONNECTION_KEY,
-        'x-pica-action-id': 'conn_mod_def::GCcb_iT9I0k::create_agent'
+        'x-pica-action-id': 'conn_mod_def::GCcb_iT9I0k::xNo_w809TEu2pRzqcCQ4_w'
       },
       body: JSON.stringify(payload)
     })

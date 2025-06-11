@@ -109,7 +109,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
         'x-pica-secret': PICA_SECRET_KEY,
         'x-pica-connection-key': PICA_ELEVENLABS_CONNECTION_KEY,
-        'x-pica-action-id': 'conn_mod_def::GCcb_iT9I0k::start_conversation'
+        'x-pica-action-id': 'conn_mod_def::GCcb_iT9I0k::start_conversation_action_id' // You'll need to get the correct action ID for starting conversations
       },
       body: JSON.stringify(conversationData)
     })
