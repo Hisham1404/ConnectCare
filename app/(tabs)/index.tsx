@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Pill, Heart, Activity, Calendar, Clock, User, TrendingUp, CircleAlert as AlertCircle, CircleCheck as CheckCircle, Apple, Dumbbell, Thermometer, Droplets, Zap, Target, Award, Bell, Phone, Video, MessageSquare, Plus } from 'lucide-react-native';
 import { useAuth } from '../../hooks/useAuth';
+import { Colors, SemanticColors } from '../../constants/Colors';
 
 const { width } = Dimensions.get('window');
 
@@ -56,7 +57,7 @@ export default function PatientDashboard() {
       value: '72',
       unit: 'BPM',
       icon: Heart,
-      color: '#ef4444',
+      color: Colors.heartRate,
       status: 'normal',
       trend: 'stable',
       lastUpdated: '2 min ago',
@@ -67,7 +68,7 @@ export default function PatientDashboard() {
       value: '120/80',
       unit: 'mmHg',
       icon: Activity,
-      color: '#3b82f6',
+      color: Colors.bloodPressure,
       status: 'normal',
       trend: 'improving',
       lastUpdated: '1 hour ago',
@@ -78,7 +79,7 @@ export default function PatientDashboard() {
       value: '98.6',
       unit: '°F',
       icon: Thermometer,
-      color: '#f59e0b',
+      color: Colors.temperature,
       status: 'normal',
       trend: 'stable',
       lastUpdated: '3 hours ago',
@@ -89,7 +90,7 @@ export default function PatientDashboard() {
       value: '98',
       unit: '%',
       icon: Droplets,
-      color: '#10b981',
+      color: Colors.oxygen,
       status: 'excellent',
       trend: 'stable',
       lastUpdated: '1 hour ago',
@@ -114,7 +115,7 @@ export default function PatientDashboard() {
       title: 'Daily Walking Routine',
       description: 'Take a 20-minute walk after breakfast to improve cardiovascular health.',
       icon: Dumbbell,
-      color: '#3b82f6',
+      color: Colors.accent,
       completed: false,
       progress: 85,
     },
@@ -124,7 +125,7 @@ export default function PatientDashboard() {
       title: 'Heart-Healthy Breakfast',
       description: 'Include oatmeal with berries and nuts for omega-3 fatty acids.',
       icon: Apple,
-      color: '#10b981',
+      color: Colors.success,
       completed: true,
       progress: 100,
     },
@@ -134,7 +135,7 @@ export default function PatientDashboard() {
       title: 'Stress Management',
       description: 'Practice 10 minutes of deep breathing exercises before bed.',
       icon: Target,
-      color: '#8b5cf6',
+      color: Colors.accent,
       completed: false,
       progress: 60,
     },
@@ -144,7 +145,7 @@ export default function PatientDashboard() {
       title: 'Blood Pressure Check',
       description: 'Record your blood pressure twice daily as prescribed.',
       icon: Activity,
-      color: '#ef4444',
+      color: Colors.heartRate,
       completed: true,
       progress: 100,
     },
@@ -166,11 +167,11 @@ export default function PatientDashboard() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'excellent': return '#10b981';
-      case 'normal': return '#3b82f6';
-      case 'warning': return '#f59e0b';
-      case 'critical': return '#ef4444';
-      default: return '#6b7280';
+      case 'excellent': return Colors.success;
+      case 'normal': return Colors.accent;
+      case 'warning': return Colors.warning;
+      case 'critical': return Colors.error;
+      default: return Colors.textSecondary;
     }
   };
 
@@ -213,7 +214,7 @@ export default function PatientDashboard() {
         
         <View style={styles.headerRight}>
           <TouchableOpacity style={styles.notificationButton}>
-            <Bell color="#6b7280" size={24} />
+            <Bell color={Colors.textSecondary} size={24} />
             <View style={styles.notificationBadge}>
               <Text style={styles.badgeText}>{getPendingMedications().length}</Text>
             </View>
@@ -223,7 +224,7 @@ export default function PatientDashboard() {
             style={styles.switchModeButton}
             onPress={switchToDoctorMode}
           >
-            <User color="#3b82f6" size={20} />
+            <User color={Colors.accent} size={20} />
           </TouchableOpacity>
         </View>
       </View>
@@ -284,9 +285,9 @@ export default function PatientDashboard() {
             <View style={styles.medicationLeft}>
               <View style={[
                 styles.medicationIcon,
-                { backgroundColor: medication.taken ? '#10b98115' : '#f59e0b15' }
+                { backgroundColor: medication.taken ? `${Colors.success}${Colors.opacity.light}` : `${Colors.warning}${Colors.opacity.light}` }
               ]}>
-                <Pill color={medication.taken ? '#10b981' : '#f59e0b'} size={20} />
+                <Pill color={medication.taken ? Colors.success : Colors.warning} size={20} />
               </View>
               <View style={styles.medicationInfo}>
                 <Text style={styles.medicationName}>{medication.name}</Text>
@@ -300,7 +301,7 @@ export default function PatientDashboard() {
             
             <TouchableOpacity style={[
               styles.medicationStatus,
-              { backgroundColor: medication.taken ? '#10b981' : '#f59e0b' }
+              { backgroundColor: medication.taken ? Colors.success : Colors.warning }
             ]}>
               {medication.taken ? (
                 <CheckCircle color="#ffffff\" size={16} />
@@ -317,7 +318,7 @@ export default function PatientDashboard() {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>My Health Metrics</Text>
           <TouchableOpacity style={styles.addButton}>
-            <Plus color="#3b82f6" size={16} />
+            <Plus color={Colors.accent} size={16} />
             <Text style={styles.addButtonText}>Log</Text>
           </TouchableOpacity>
         </View>
@@ -328,7 +329,7 @@ export default function PatientDashboard() {
             return (
               <View key={metric.id} style={styles.metricCard}>
                 <View style={styles.metricHeader}>
-                  <View style={[styles.metricIcon, { backgroundColor: `${metric.color}15` }]}>
+                  <View style={[styles.metricIcon, { backgroundColor: `${metric.color}${Colors.opacity.light}` }]}>
                     <metric.icon color={metric.color} size={20} />
                   </View>
                   <TrendIcon color={getStatusColor(metric.status)} size={16} />
@@ -343,7 +344,7 @@ export default function PatientDashboard() {
                 
                 <View style={[
                   styles.metricStatus,
-                  { backgroundColor: `${getStatusColor(metric.status)}15` }
+                  { backgroundColor: `${getStatusColor(metric.status)}${Colors.opacity.light}` }
                 ]}>
                   <Text style={[
                     styles.metricStatusText,
@@ -372,32 +373,32 @@ export default function PatientDashboard() {
             </View>
             <View style={styles.appointmentBadge}>
               {nextAppointment.isVideoCall ? (
-                <Video color="#3b82f6\" size={16} />
+                <Video color={Colors.accent} size={16} />
               ) : (
-                <Calendar color="#3b82f6" size={16} />
+                <Calendar color={Colors.accent} size={16} />
               )}
             </View>
           </View>
           
           <View style={styles.appointmentDetails}>
             <View style={styles.appointmentDetailItem}>
-              <Calendar color="#6b7280" size={16} />
+              <Calendar color={Colors.textSecondary} size={16} />
               <Text style={styles.appointmentDetailText}>{nextAppointment.date}</Text>
             </View>
             <View style={styles.appointmentDetailItem}>
-              <Clock color="#6b7280" size={16} />
+              <Clock color={Colors.textSecondary} size={16} />
               <Text style={styles.appointmentDetailText}>{nextAppointment.time}</Text>
             </View>
           </View>
           
           <View style={styles.appointmentActions}>
             <TouchableOpacity style={styles.appointmentSecondaryButton}>
-              <Phone color="#6b7280" size={16} />
+              <Phone color={Colors.textSecondary} size={16} />
               <Text style={styles.appointmentSecondaryText}>Call</Text>
             </TouchableOpacity>
             
             <TouchableOpacity style={styles.appointmentSecondaryButton}>
-              <MessageSquare color="#6b7280" size={16} />
+              <MessageSquare color={Colors.textSecondary} size={16} />
               <Text style={styles.appointmentSecondaryText}>Message</Text>
             </TouchableOpacity>
             
@@ -423,7 +424,7 @@ export default function PatientDashboard() {
             <View style={styles.recommendationLeft}>
               <View style={[
                 styles.recommendationIcon,
-                { backgroundColor: `${recommendation.color}15` }
+                { backgroundColor: `${recommendation.color}${Colors.opacity.light}` }
               ]}>
                 <recommendation.icon color={recommendation.color} size={20} />
               </View>
@@ -432,7 +433,7 @@ export default function PatientDashboard() {
                   <Text style={styles.recommendationCategory}>{recommendation.category}</Text>
                   {recommendation.completed && (
                     <View style={styles.completedBadge}>
-                      <CheckCircle color="#10b981" size={12} />
+                      <CheckCircle color={Colors.success} size={12} />
                     </View>
                   )}
                 </View>
@@ -461,9 +462,9 @@ export default function PatientDashboard() {
               recommendation.completed && styles.recommendationCompleted
             ]}>
               {recommendation.completed ? (
-                <CheckCircle color="#10b981\" size={20} />
+                <CheckCircle color={Colors.success} size={20} />
               ) : (
-                <Target color="#6b7280" size={20} />
+                <Target color={Colors.textSecondary} size={20} />
               )}
             </TouchableOpacity>
           </View>
@@ -476,29 +477,29 @@ export default function PatientDashboard() {
         
         <View style={styles.quickActionsGrid}>
           <TouchableOpacity style={styles.quickActionCard}>
-            <View style={[styles.quickActionIcon, { backgroundColor: '#ef444415' }]}>
-              <Zap color="#ef4444" size={24} />
+            <View style={[styles.quickActionIcon, { backgroundColor: `${Colors.error}${Colors.opacity.light}` }]}>
+              <Zap color={Colors.error} size={24} />
             </View>
             <Text style={styles.quickActionTitle}>Emergency Call</Text>
           </TouchableOpacity>
           
           <TouchableOpacity style={styles.quickActionCard}>
-            <View style={[styles.quickActionIcon, { backgroundColor: '#3b82f615' }]}>
-              <Activity color="#3b82f6" size={24} />
+            <View style={[styles.quickActionIcon, { backgroundColor: `${Colors.accent}${Colors.opacity.light}` }]}>
+              <Activity color={Colors.accent} size={24} />
             </View>
             <Text style={styles.quickActionTitle}>Log Symptoms</Text>
           </TouchableOpacity>
           
           <TouchableOpacity style={styles.quickActionCard}>
-            <View style={[styles.quickActionIcon, { backgroundColor: '#10b98115' }]}>
-              <Award color="#10b981" size={24} />
+            <View style={[styles.quickActionIcon, { backgroundColor: `${Colors.success}${Colors.opacity.light}` }]}>
+              <Award color={Colors.success} size={24} />
             </View>
             <Text style={styles.quickActionTitle}>Health Goals</Text>
           </TouchableOpacity>
           
           <TouchableOpacity style={styles.quickActionCard}>
-            <View style={[styles.quickActionIcon, { backgroundColor: '#f59e0b15' }]}>
-              <Calendar color="#f59e0b" size={24} />
+            <View style={[styles.quickActionIcon, { backgroundColor: `${Colors.warning}${Colors.opacity.light}` }]}>
+              <Calendar color={Colors.warning} size={24} />
             </View>
             <Text style={styles.quickActionTitle}>Schedule Visit</Text>
           </TouchableOpacity>
@@ -511,7 +512,7 @@ export default function PatientDashboard() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: Colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -520,7 +521,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 20,
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.surface,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -534,18 +535,18 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontSize: 14,
-    color: '#6b7280',
+    color: Colors.textSecondary,
     fontWeight: '500',
   },
   userName: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1f2937',
+    color: Colors.textPrimary,
     marginTop: 2,
   },
   healthStatus: {
     fontSize: 12,
-    color: '#10b981',
+    color: Colors.success,
     fontWeight: '500',
     marginTop: 2,
   },
@@ -562,7 +563,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 4,
     right: 4,
-    backgroundColor: '#ef4444',
+    backgroundColor: Colors.error,
     borderRadius: 10,
     width: 20,
     height: 20,
@@ -570,13 +571,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   badgeText: {
-    color: '#ffffff',
+    color: Colors.surface,
     fontSize: 12,
     fontWeight: '600',
   },
   switchModeButton: {
     padding: 8,
-    backgroundColor: '#eff6ff',
+    backgroundColor: `${Colors.accent}${Colors.opacity.light}`,
     borderRadius: 20,
   },
   section: {
@@ -592,34 +593,34 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1f2937',
+    color: Colors.textPrimary,
   },
   seeAll: {
     fontSize: 14,
-    color: '#3b82f6',
+    color: Colors.accent,
     fontWeight: '600',
   },
   completionText: {
     fontSize: 14,
-    color: '#10b981',
+    color: Colors.success,
     fontWeight: '600',
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#eff6ff',
+    backgroundColor: `${Colors.accent}${Colors.opacity.light}`,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
   addButtonText: {
     fontSize: 12,
-    color: '#3b82f6',
+    color: Colors.accent,
     fontWeight: '600',
   },
   progressCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.surface,
     borderRadius: 16,
     padding: 20,
     shadowColor: '#000',
@@ -637,24 +638,24 @@ const styles = StyleSheet.create({
   progressTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1f2937',
+    color: Colors.textPrimary,
   },
   progressPercentage: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#10b981',
+    color: Colors.success,
   },
   progressBarContainer: {
     marginBottom: 20,
   },
   progressBar: {
     height: 8,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: `${Colors.textSecondary}${Colors.opacity.light}`,
     borderRadius: 4,
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#10b981',
+    backgroundColor: Colors.success,
     borderRadius: 4,
   },
   progressMetrics: {
@@ -666,16 +667,16 @@ const styles = StyleSheet.create({
   },
   progressMetricLabel: {
     fontSize: 12,
-    color: '#6b7280',
+    color: Colors.textSecondary,
     marginBottom: 4,
   },
   progressMetricValue: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#1f2937',
+    color: Colors.textPrimary,
   },
   medicationCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.surface,
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
@@ -707,22 +708,22 @@ const styles = StyleSheet.create({
   medicationName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1f2937',
+    color: Colors.textPrimary,
     marginBottom: 2,
   },
   medicationType: {
     fontSize: 12,
-    color: '#6b7280',
+    color: Colors.textSecondary,
     marginBottom: 2,
   },
   medicationDosage: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: Colors.textTertiary,
     marginBottom: 2,
   },
   nextDose: {
     fontSize: 11,
-    color: '#f59e0b',
+    color: Colors.warning,
     fontWeight: '600',
   },
   medicationStatus: {
@@ -738,7 +739,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   metricCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.surface,
     borderRadius: 16,
     padding: 16,
     width: (width - 52) / 2,
@@ -764,22 +765,22 @@ const styles = StyleSheet.create({
   metricValue: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#1f2937',
+    color: Colors.textPrimary,
     marginBottom: 4,
   },
   metricUnit: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#6b7280',
+    color: Colors.textSecondary,
   },
   metricLabel: {
     fontSize: 12,
-    color: '#6b7280',
+    color: Colors.textSecondary,
     marginBottom: 4,
   },
   metricLastUpdated: {
     fontSize: 10,
-    color: '#9ca3af',
+    color: Colors.textTertiary,
     marginBottom: 8,
   },
   metricStatus: {
@@ -793,7 +794,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   appointmentCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.surface,
     borderRadius: 16,
     padding: 20,
     shadowColor: '#000',
@@ -819,23 +820,23 @@ const styles = StyleSheet.create({
   doctorName: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1f2937',
+    color: Colors.textPrimary,
     marginBottom: 2,
   },
   doctorSpecialty: {
     fontSize: 12,
-    color: '#3b82f6',
+    color: Colors.accent,
     marginBottom: 2,
   },
   appointmentType: {
     fontSize: 12,
-    color: '#6b7280',
+    color: Colors.textSecondary,
   },
   appointmentBadge: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#eff6ff',
+    backgroundColor: `${Colors.accent}${Colors.opacity.light}`,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -851,7 +852,7 @@ const styles = StyleSheet.create({
   },
   appointmentDetailText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: Colors.textSecondary,
     fontWeight: '500',
   },
   appointmentActions: {
@@ -862,14 +863,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: `${Colors.textSecondary}${Colors.opacity.light}`,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
   appointmentSecondaryText: {
     fontSize: 12,
-    color: '#6b7280',
+    color: Colors.textSecondary,
     fontWeight: '600',
   },
   appointmentPrimaryButton: {
@@ -878,17 +879,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#3b82f6',
+    backgroundColor: Colors.accent,
     borderRadius: 12,
     paddingVertical: 8,
   },
   appointmentPrimaryText: {
     fontSize: 12,
-    color: '#ffffff',
+    color: Colors.surface,
     fontWeight: '600',
   },
   recommendationCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.surface,
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
@@ -924,7 +925,7 @@ const styles = StyleSheet.create({
   },
   recommendationCategory: {
     fontSize: 10,
-    color: '#6b7280',
+    color: Colors.textSecondary,
     fontWeight: '600',
     textTransform: 'uppercase',
   },
@@ -932,19 +933,19 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: '#f0fdf4',
+    backgroundColor: `${Colors.success}${Colors.opacity.light}`,
     justifyContent: 'center',
     alignItems: 'center',
   },
   recommendationTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1f2937',
+    color: Colors.textPrimary,
     marginBottom: 4,
   },
   recommendationDescription: {
     fontSize: 12,
-    color: '#6b7280',
+    color: Colors.textSecondary,
     lineHeight: 16,
     marginBottom: 8,
   },
@@ -956,7 +957,7 @@ const styles = StyleSheet.create({
   recommendationProgressBar: {
     flex: 1,
     height: 4,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: `${Colors.textSecondary}${Colors.opacity.light}`,
     borderRadius: 2,
   },
   recommendationProgressFill: {
@@ -965,7 +966,7 @@ const styles = StyleSheet.create({
   },
   recommendationProgressText: {
     fontSize: 10,
-    color: '#6b7280',
+    color: Colors.textSecondary,
     fontWeight: '600',
   },
   recommendationAction: {
@@ -976,7 +977,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   recommendationCompleted: {
-    backgroundColor: '#f0fdf4',
+    backgroundColor: `${Colors.success}${Colors.opacity.light}`,
   },
   quickActionsGrid: {
     flexDirection: 'row',
@@ -984,7 +985,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   quickActionCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.surface,
     borderRadius: 16,
     padding: 20,
     width: (width - 52) / 2,
@@ -1006,7 +1007,7 @@ const styles = StyleSheet.create({
   quickActionTitle: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#1f2937',
+    color: Colors.textPrimary,
     textAlign: 'center',
   },
 });

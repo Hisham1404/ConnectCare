@@ -10,6 +10,7 @@ import {
   TextInput,
 } from 'react-native';
 import { Mic, Bot, MicOff, Volume2, VolumeX, Heart, Headphones, Type, X } from 'lucide-react-native';
+import { Colors } from '../../constants/Colors';
 
 const { width, height } = Dimensions.get('window');
 
@@ -227,7 +228,7 @@ export default function DailyCheckinScreen() {
           style={styles.exitButton}
           onPress={exitVoiceMode}
         >
-          <X color="#ffffff" size={24} />
+          <X color={Colors.surface} size={24} />
         </TouchableOpacity>
 
         {/* Voice Animation Container */}
@@ -274,11 +275,11 @@ export default function DailyCheckinScreen() {
               activeOpacity={0.8}
             >
               {isProcessing ? (
-                <Heart color="#ffffff\" size={48} />
+                <Heart color={Colors.surface} size={48} />
               ) : isRecording ? (
-                <MicOff color="#ffffff\" size={48} />
+                <MicOff color={Colors.surface} size={48} />
               ) : (
-                <Mic color="#ffffff" size={48} />
+                <Mic color={Colors.surface} size={48} />
               )}
             </TouchableOpacity>
           </Animated.View>
@@ -336,7 +337,7 @@ export default function DailyCheckinScreen() {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <View style={styles.aiHeaderAvatar}>
-            <Bot color="#3b82f6" size={20} />
+            <Bot color={Colors.accent} size={20} />
           </View>
           <View>
             <Text style={styles.headerTitle}>Daily Check-in</Text>
@@ -349,9 +350,9 @@ export default function DailyCheckinScreen() {
           onPress={() => setIsSpeakerOn(!isSpeakerOn)}
         >
           {isSpeakerOn ? (
-            <Volume2 color="#3b82f6\" size={20} />
+            <Volume2 color={Colors.accent} size={20} />
           ) : (
-            <VolumeX color="#6b7280\" size={20} />
+            <VolumeX color={Colors.textSecondary} size={20} />
           )}
         </TouchableOpacity>
       </View>
@@ -406,9 +407,9 @@ export default function DailyCheckinScreen() {
               }
             ]}>
               {isProcessing ? (
-                <Heart color="#ffffff\" size={32} />
+                <Heart color={Colors.surface} size={32} />
               ) : (
-                <Mic color="#ffffff\" size={32} />
+                <Mic color={Colors.surface} size={32} />
               )}
             </Animated.View>
           </TouchableOpacity>
@@ -425,7 +426,7 @@ export default function DailyCheckinScreen() {
             style={styles.actionButton}
             onPress={() => setShowTextInput(!showTextInput)}
           >
-            <Type color="#6b7280" size={20} />
+            <Type color={Colors.textSecondary} size={20} />
             <Text style={styles.actionButtonText}>Type Instead</Text>
           </TouchableOpacity>
 
@@ -433,7 +434,7 @@ export default function DailyCheckinScreen() {
             style={styles.actionButton}
             onPress={resetCheckin}
           >
-            <Headphones color="#6b7280" size={20} />
+            <Headphones color={Colors.textSecondary} size={20} />
             <Text style={styles.actionButtonText}>Start Over</Text>
           </TouchableOpacity>
         </View>
@@ -444,7 +445,7 @@ export default function DailyCheckinScreen() {
             <TextInput
               style={styles.textInput}
               placeholder="Type your answer here..."
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={Colors.textTertiary}
               value={textInput}
               onChangeText={setTextInput}
               multiline
@@ -467,7 +468,7 @@ export default function DailyCheckinScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: Colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -476,9 +477,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 60,
     paddingBottom: 20,
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: `${Colors.textSecondary}${Colors.opacity.light}`,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -489,25 +490,25 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#eff6ff',
+    backgroundColor: `${Colors.accent}${Colors.opacity.light}`,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1f2937',
+    color: Colors.textPrimary,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#6b7280',
+    color: Colors.textSecondary,
     marginTop: 2,
   },
   speakerButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: `${Colors.textSecondary}${Colors.opacity.light}`,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -523,18 +524,18 @@ const styles = StyleSheet.create({
   reminderTitle: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#1f2937',
+    color: Colors.textPrimary,
     textAlign: 'center',
     marginBottom: 8,
   },
   reminderSubtitle: {
     fontSize: 16,
-    color: '#6b7280',
+    color: Colors.textSecondary,
     textAlign: 'center',
     marginBottom: 32,
   },
   questionContainer: {
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.surface,
     borderRadius: 20,
     padding: 24,
     marginBottom: 32,
@@ -548,7 +549,7 @@ const styles = StyleSheet.create({
   },
   questionText: {
     fontSize: 18,
-    color: '#1f2937',
+    color: Colors.textPrimary,
     textAlign: 'center',
     lineHeight: 26,
     fontWeight: '500',
@@ -560,18 +561,18 @@ const styles = StyleSheet.create({
   progressBar: {
     width: '80%',
     height: 6,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: `${Colors.textSecondary}${Colors.opacity.light}`,
     borderRadius: 3,
     marginBottom: 8,
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#3b82f6',
+    backgroundColor: Colors.primary,
     borderRadius: 3,
   },
   progressText: {
     fontSize: 12,
-    color: '#6b7280',
+    color: Colors.textSecondary,
     fontWeight: '500',
   },
   voiceInterface: {
@@ -584,10 +585,10 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: '#3b82f6',
+    backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#3b82f6',
+    shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 20,
@@ -595,12 +596,12 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   recordingButton: {
-    backgroundColor: '#ef4444',
-    shadowColor: '#ef4444',
+    backgroundColor: Colors.error,
+    shadowColor: Colors.error,
   },
   processingButton: {
-    backgroundColor: '#10b981',
-    shadowColor: '#10b981',
+    backgroundColor: Colors.success,
+    shadowColor: Colors.success,
   },
   voiceButtonInner: {
     justifyContent: 'center',
@@ -608,7 +609,7 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 16,
-    color: '#6b7280',
+    color: Colors.textSecondary,
     textAlign: 'center',
     fontWeight: '500',
     marginBottom: 16,
@@ -621,7 +622,7 @@ const styles = StyleSheet.create({
   actionButton: {
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.surface,
     borderRadius: 16,
     paddingVertical: 16,
     paddingHorizontal: 24,
@@ -634,7 +635,7 @@ const styles = StyleSheet.create({
   },
   actionButtonText: {
     fontSize: 12,
-    color: '#6b7280',
+    color: Colors.textSecondary,
     fontWeight: '600',
   },
   textInputContainer: {
@@ -642,7 +643,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 24,
     right: 24,
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.surface,
     borderRadius: 20,
     padding: 20,
     shadowColor: '#000',
@@ -652,26 +653,26 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   textInput: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: Colors.background,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: '#1f2937',
+    color: Colors.textPrimary,
     minHeight: 80,
     textAlignVertical: 'top',
     marginBottom: 16,
   },
   submitButton: {
-    backgroundColor: '#d1d5db',
+    backgroundColor: Colors.textTertiary,
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: 'center',
   },
   submitButtonActive: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: Colors.primary,
   },
   submitButtonText: {
-    color: '#ffffff',
+    color: Colors.surface,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -708,7 +709,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     borderRadius: 1000,
     borderWidth: 2,
-    borderColor: 'rgba(59, 130, 246, 0.3)',
+    borderColor: `${Colors.primary}30`,
   },
   voiceOrb: {
     width: 200,
@@ -722,10 +723,10 @@ const styles = StyleSheet.create({
     width: 200,
     height: 200,
     borderRadius: 100,
-    backgroundColor: 'rgba(59, 130, 246, 0.8)',
+    backgroundColor: `${Colors.primary}CC`,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#3b82f6',
+    shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.4,
     shadowRadius: 24,
@@ -737,7 +738,7 @@ const styles = StyleSheet.create({
   },
   voiceStatusText: {
     fontSize: 18,
-    color: '#ffffff',
+    color: Colors.surface,
     textAlign: 'center',
     fontWeight: '500',
     marginBottom: 20,
@@ -765,7 +766,7 @@ const styles = StyleSheet.create({
   },
   voiceQuestionText: {
     fontSize: 16,
-    color: '#ffffff',
+    color: Colors.surface,
     textAlign: 'center',
     lineHeight: 24,
     fontWeight: '500',

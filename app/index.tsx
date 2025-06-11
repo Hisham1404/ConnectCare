@@ -11,6 +11,7 @@ import {
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Heart, Shield, Users, Activity, Brain, Stethoscope, ArrowRight, Star, CircleCheck as CheckCircle, User, Calendar } from 'lucide-react-native';
+import { Colors, SemanticColors } from '../constants/Colors';
 
 const { width } = Dimensions.get('window');
 
@@ -20,25 +21,25 @@ export default function WelcomeScreen() {
       icon: Brain,
       title: 'AI-Powered Monitoring',
       description: 'Advanced AI analyzes patient data to provide real-time health insights and early warning systems.',
-      color: '#3b82f6',
+      color: Colors.accent,
     },
     {
       icon: Stethoscope,
       title: 'Expert Medical Care',
       description: 'Connect with qualified doctors and healthcare professionals for comprehensive patient care.',
-      color: '#10b981',
+      color: Colors.success,
     },
     {
       icon: Shield,
       title: 'HIPAA Compliant',
       description: 'Your health data is protected with enterprise-grade security and privacy measures.',
-      color: '#f59e0b',
+      color: Colors.warning,
     },
     {
       icon: Activity,
       title: '24/7 Monitoring',
       description: 'Continuous health monitoring ensures immediate response to critical health changes.',
-      color: '#ef4444',
+      color: Colors.error,
     },
   ];
 
@@ -71,14 +72,14 @@ export default function WelcomeScreen() {
       type: 'Doctor Dashboard',
       description: 'View the complete doctor interface with patient monitoring, AI insights, and real-time alerts.',
       icon: Stethoscope,
-      color: '#3b82f6',
+      color: Colors.accent,
       route: '/dashboard',
     },
     {
       type: 'Patient Interface',
       description: 'Experience the patient-focused tabs with health monitoring, AI chat, and profile management.',
       icon: User,
-      color: '#10b981',
+      color: Colors.success,
       route: '/(tabs)',
     },
   ];
@@ -94,7 +95,7 @@ export default function WelcomeScreen() {
         <View style={styles.heroSection}>
           <View style={styles.logoContainer}>
             <View style={styles.logo}>
-              <Heart color="#3b82f6" size={40} fill="#3b82f6" />
+              <Heart color={Colors.primary} size={40} fill={Colors.primary} />
             </View>
             <Text style={styles.appName}>ConnectCare AI</Text>
             <Text style={styles.tagline}>Remote Patient Monitoring</Text>
@@ -134,7 +135,7 @@ export default function WelcomeScreen() {
                     <Text style={styles.demoAccountType}>{account.type}</Text>
                     <Text style={styles.demoAccountDescription}>{account.description}</Text>
                   </View>
-                  <ArrowRight color="#6b7280" size={20} />
+                  <ArrowRight color={Colors.textSecondary} size={20} />
                 </TouchableOpacity>
               ))}
             </View>
@@ -179,7 +180,7 @@ export default function WelcomeScreen() {
           <View style={styles.featuresGrid}>
             {features.map((feature, index) => (
               <View key={index} style={styles.featureCard}>
-                <View style={[styles.featureIcon, { backgroundColor: `${feature.color}15` }]}>
+                <View style={[styles.featureIcon, { backgroundColor: `${feature.color}${Colors.opacity.light}` }]}>
                   <feature.icon color={feature.color} size={28} />
                 </View>
                 <Text style={styles.featureTitle}>{feature.title}</Text>
@@ -206,7 +207,7 @@ export default function WelcomeScreen() {
                     <Text style={styles.testimonialRole}>{testimonial.role}</Text>
                     <View style={styles.ratingContainer}>
                       {[...Array(testimonial.rating)].map((_, i) => (
-                        <Star key={i} color="#f59e0b" size={14} fill="#f59e0b" />
+                        <Star key={i} color={Colors.warning} size={14} fill={Colors.warning} />
                       ))}
                     </View>
                   </View>
@@ -230,7 +231,7 @@ export default function WelcomeScreen() {
               'Mobile-first design for accessibility',
             ].map((benefit, index) => (
               <View key={index} style={styles.benefitItem}>
-                <CheckCircle color="#10b981" size={20} />
+                <CheckCircle color={Colors.success} size={20} />
                 <Text style={styles.benefitText}>{benefit}</Text>
               </View>
             ))}
@@ -263,7 +264,7 @@ export default function WelcomeScreen() {
                 router.push('/(tabs)');
               }}
             >
-              <User color="#3b82f6" size={20} />
+              <User color={Colors.accent} size={20} />
               <Text style={[styles.finalCtaButtonText, styles.secondaryCtaButtonText]}>Patient Interface</Text>
             </TouchableOpacity>
           </View>
@@ -290,7 +291,7 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.surface,
   },
   scrollContainer: {
     flexGrow: 1,
@@ -300,7 +301,7 @@ const styles = StyleSheet.create({
     paddingTop: 80,
     paddingBottom: 60,
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: Colors.background,
   },
   logoContainer: {
     alignItems: 'center',
@@ -310,11 +311,11 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#eff6ff',
+    backgroundColor: `${Colors.primary}${Colors.opacity.light}`,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
-    shadowColor: '#3b82f6',
+    shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.15,
     shadowRadius: 20,
@@ -323,28 +324,28 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: 32,
     fontWeight: '800',
-    color: '#1f2937',
+    color: Colors.textPrimary,
     marginBottom: 8,
   },
   tagline: {
     fontSize: 16,
-    color: '#6b7280',
+    color: Colors.textSecondary,
     fontWeight: '500',
   },
   heroTitle: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#1f2937',
+    color: Colors.textPrimary,
     textAlign: 'center',
     lineHeight: 36,
     marginBottom: 20,
   },
   highlightText: {
-    color: '#3b82f6',
+    color: Colors.primary,
   },
   heroDescription: {
     fontSize: 16,
-    color: '#6b7280',
+    color: Colors.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 40,
@@ -352,7 +353,7 @@ const styles = StyleSheet.create({
   },
   demoSection: {
     width: '100%',
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.surface,
     borderRadius: 20,
     padding: 24,
     shadowColor: '#000',
@@ -364,13 +365,13 @@ const styles = StyleSheet.create({
   demoTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#1f2937',
+    color: Colors.textPrimary,
     textAlign: 'center',
     marginBottom: 8,
   },
   demoSubtitle: {
     fontSize: 14,
-    color: '#6b7280',
+    color: Colors.textSecondary,
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 20,
@@ -382,11 +383,11 @@ const styles = StyleSheet.create({
   demoAccountCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: Colors.background,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: `${Colors.textSecondary}${Colors.opacity.light}`,
   },
   demoIcon: {
     width: 48,
@@ -402,25 +403,25 @@ const styles = StyleSheet.create({
   demoAccountType: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1f2937',
+    color: Colors.textPrimary,
     marginBottom: 4,
   },
   demoAccountDescription: {
     fontSize: 12,
-    color: '#6b7280',
+    color: Colors.textSecondary,
     lineHeight: 16,
   },
   credentialsBox: {
-    backgroundColor: '#f0fdf4',
+    backgroundColor: `${Colors.success}${Colors.opacity.light}`,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#bbf7d0',
+    borderColor: `${Colors.success}${Colors.opacity.medium}`,
   },
   credentialsTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#166534',
+    color: Colors.success,
     marginBottom: 12,
     textAlign: 'center',
   },
@@ -433,17 +434,17 @@ const styles = StyleSheet.create({
   credentialLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#166534',
+    color: Colors.success,
   },
   credentialValue: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#15803d',
+    color: Colors.success,
     fontFamily: 'monospace',
   },
   credentialsNote: {
     fontSize: 11,
-    color: '#16a34a',
+    color: Colors.success,
     textAlign: 'center',
     marginTop: 8,
     fontStyle: 'italic',
@@ -451,18 +452,18 @@ const styles = StyleSheet.create({
   statsSection: {
     paddingHorizontal: 24,
     paddingVertical: 60,
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.surface,
   },
   sectionTitle: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#1f2937',
+    color: Colors.textPrimary,
     textAlign: 'center',
     marginBottom: 16,
   },
   sectionSubtitle: {
     fontSize: 16,
-    color: '#6b7280',
+    color: Colors.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 40,
@@ -475,36 +476,36 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   statCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: Colors.background,
     borderRadius: 16,
     padding: 24,
     width: (width - 64) / 2,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: `${Colors.textSecondary}${Colors.opacity.light}`,
   },
   statNumber: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#3b82f6',
+    color: Colors.primary,
     marginBottom: 8,
   },
   statLabel: {
     fontSize: 14,
-    color: '#6b7280',
+    color: Colors.textSecondary,
     textAlign: 'center',
     fontWeight: '500',
   },
   featuresSection: {
     paddingHorizontal: 24,
     paddingVertical: 60,
-    backgroundColor: '#f8fafc',
+    backgroundColor: Colors.background,
   },
   featuresGrid: {
     gap: 24,
   },
   featureCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.surface,
     borderRadius: 20,
     padding: 24,
     alignItems: 'center',
@@ -525,31 +526,31 @@ const styles = StyleSheet.create({
   featureTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1f2937',
+    color: Colors.textPrimary,
     marginBottom: 12,
     textAlign: 'center',
   },
   featureDescription: {
     fontSize: 14,
-    color: '#6b7280',
+    color: Colors.textSecondary,
     textAlign: 'center',
     lineHeight: 20,
   },
   testimonialsSection: {
     paddingVertical: 60,
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.surface,
   },
   testimonialsContainer: {
     paddingHorizontal: 24,
     gap: 20,
   },
   testimonialCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: Colors.background,
     borderRadius: 20,
     padding: 24,
     width: width - 80,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: `${Colors.textSecondary}${Colors.opacity.light}`,
   },
   testimonialHeader: {
     flexDirection: 'row',
@@ -568,12 +569,12 @@ const styles = StyleSheet.create({
   testimonialName: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1f2937',
+    color: Colors.textPrimary,
     marginBottom: 4,
   },
   testimonialRole: {
     fontSize: 14,
-    color: '#6b7280',
+    color: Colors.textSecondary,
     marginBottom: 8,
   },
   ratingContainer: {
@@ -582,14 +583,14 @@ const styles = StyleSheet.create({
   },
   testimonialQuote: {
     fontSize: 14,
-    color: '#374151',
+    color: Colors.textSecondary,
     lineHeight: 20,
     fontStyle: 'italic',
   },
   benefitsSection: {
     paddingHorizontal: 24,
     paddingVertical: 60,
-    backgroundColor: '#f8fafc',
+    backgroundColor: Colors.background,
   },
   benefitsList: {
     gap: 16,
@@ -598,7 +599,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.surface,
     borderRadius: 12,
     padding: 16,
     shadowColor: '#000',
@@ -609,26 +610,26 @@ const styles = StyleSheet.create({
   },
   benefitText: {
     fontSize: 14,
-    color: '#374151',
+    color: Colors.textSecondary,
     fontWeight: '500',
     flex: 1,
   },
   finalCtaSection: {
     paddingHorizontal: 24,
     paddingVertical: 60,
-    backgroundColor: '#1f2937',
+    backgroundColor: Colors.textPrimary,
     alignItems: 'center',
   },
   finalCtaTitle: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#ffffff',
+    color: Colors.surface,
     textAlign: 'center',
     marginBottom: 16,
   },
   finalCtaDescription: {
     fontSize: 16,
-    color: '#d1d5db',
+    color: `${Colors.surface}${Colors.opacity.heavy}`,
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 32,
@@ -640,7 +641,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   finalCtaButton: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: Colors.primary,
     borderRadius: 16,
     paddingVertical: 18,
     paddingHorizontal: 32,
@@ -648,43 +649,43 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 8,
-    shadowColor: '#3b82f6',
+    shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 6,
   },
   secondaryCtaButton: {
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.surface,
   },
   finalCtaButtonText: {
-    color: '#ffffff',
+    color: Colors.surface,
     fontSize: 16,
     fontWeight: '700',
   },
   secondaryCtaButtonText: {
-    color: '#3b82f6',
+    color: Colors.accent,
   },
   finalCtaNote: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: Colors.textTertiary,
     textAlign: 'center',
   },
   footer: {
     paddingHorizontal: 24,
     paddingVertical: 40,
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.surface,
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
+    borderTopColor: `${Colors.textSecondary}${Colors.opacity.light}`,
   },
   footerText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: Colors.textSecondary,
     marginBottom: 8,
   },
   footerSubtext: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: Colors.textTertiary,
   },
 });
