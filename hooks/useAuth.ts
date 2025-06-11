@@ -17,16 +17,48 @@ interface Profile {
   updated_at: string;
 }
 
+// Mock profiles for demo mode
+const mockDoctorProfile: Profile = {
+  id: 'demo-doctor-id',
+  email: 'doctor@connectcare.ai',
+  full_name: 'Dr. Rajesh Kumar',
+  phone: '+91 98765 43210',
+  role: 'doctor',
+  avatar_url: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+  date_of_birth: '1980-05-15',
+  address: 'Mumbai, Maharashtra, India',
+  emergency_contact_name: 'Dr. Priya Sharma',
+  emergency_contact_phone: '+91 98765 43211',
+  created_at: '2024-01-01T00:00:00Z',
+  updated_at: '2024-01-01T00:00:00Z',
+};
+
+const mockPatientProfile: Profile = {
+  id: 'demo-patient-id',
+  email: 'patient@connectcare.ai',
+  full_name: 'John Smith',
+  phone: '+91 98765 43212',
+  role: 'patient',
+  avatar_url: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+  date_of_birth: '1975-08-20',
+  address: 'Delhi, India',
+  emergency_contact_name: 'Sarah Smith',
+  emergency_contact_phone: '+91 98765 43213',
+  created_at: '2024-01-01T00:00:00Z',
+  updated_at: '2024-01-01T00:00:00Z',
+};
+
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start with false for demo mode
+  const [demoMode, setDemoMode] = useState(false);
 
   useEffect(() => {
     let mounted = true;
 
-    // Get initial session
+    // Check for real authentication first
     const getInitialSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
@@ -66,6 +98,7 @@ export function useAuth() {
         if (mounted) {
           setSession(session);
           setUser(session?.user ?? null);
+          setDemoMode(false); // Exit demo mode when real auth happens
 
           if (session?.user) {
             await fetchUserProfile(session.user.id);
@@ -105,6 +138,15 @@ export function useAuth() {
 
   const signOut = async () => {
     try {
+      if (demoMode) {
+        // Exit demo mode
+        setDemoMode(false);
+        setUser(null);
+        setProfile(null);
+        setSession(null);
+        return;
+      }
+
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error('Error signing out:', error);
@@ -115,15 +157,27 @@ export function useAuth() {
   };
 
   const switchToPatientMode = () => {
-    // This would typically update the user's role in the database
-    // For now, we'll just log the action
-    console.log('Switch to patient mode requested');
+    setDemoMode(true);
+    setProfile(mockPatientProfile);
+    setUser({
+      id: mockPatientProfile.id,
+      email: mockPatientProfile.email,
+      created_at: mockPatientProfile.created_at,
+      updated_at: mockPatientProfile.updated_at,
+    } as User);
+    console.log('Switched to patient demo mode');
   };
 
   const switchToDoctorMode = () => {
-    // This would typically update the user's role in the database
-    // For now, we'll just log the action
-    console.log('Switch to doctor mode requested');
+    setDemoMode(true);
+    setProfile(mockDoctorProfile);
+    setUser({
+      id: mockDoctorProfile.id,
+      email: mockDoctorProfile.email,
+      created_at: mockDoctorProfile.created_at,
+      updated_at: mockDoctorProfile.updated_at,
+    } as User);
+    console.log('Switched to doctor demo mode');
   };
 
   return {
@@ -131,10 +185,11 @@ export function useAuth() {
     profile,
     session,
     loading,
+    demoMode,
     signOut,
     switchToPatientMode,
     switchToDoctorMode,
-    isAuthenticated: !!user,
+    isAuthenticated: !!user || demoMode,
     isDoctor: profile?.role === 'doctor',
     isPatient: profile?.role === 'patient',
     isAdmin: profile?.role === 'admin',

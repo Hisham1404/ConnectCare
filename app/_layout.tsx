@@ -3,45 +3,27 @@ import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, Text, StyleSheet } from 'react-native';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
-import { useAuth } from '@/hooks/useAuth';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { Colors } from '@/constants/Colors';
 
 export default function RootLayout() {
   useFrameworkReady();
   
-  const { user, loading } = useAuth();
   const [hasNavigated, setHasNavigated] = useState(false);
 
-  // Handle navigation based on authentication status
+  // For demo purposes, automatically navigate to the welcome screen
   useEffect(() => {
-    if (!loading && !hasNavigated) {
+    if (!hasNavigated) {
       setHasNavigated(true);
-      
-      if (user) {
-        // User is authenticated, redirect to main app
-        router.replace('/(tabs)');
-      } else {
-        // User is not authenticated, redirect to auth
-        router.replace('/auth');
-      }
+      // Navigate to the welcome screen instead of checking auth
+      router.replace('/welcome');
     }
-  }, [user, loading, hasNavigated]);
-
-  // Show loading screen while checking authentication
-  if (loading || !hasNavigated) {
-    return (
-      <View style={styles.loadingContainer}>
-        <LoadingSpinner size="large" />
-        <Text style={styles.loadingText}>Loading ConnectCare AI...</Text>
-      </View>
-    );
-  }
+  }, [hasNavigated]);
 
   return (
     <>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
+        <Stack.Screen name="welcome" />
         <Stack.Screen name="auth" />
         <Stack.Screen name="dashboard" />
         <Stack.Screen name="(tabs)" />
@@ -51,18 +33,3 @@ export default function RootLayout() {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: Colors.background,
-    gap: 16,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: Colors.textSecondary,
-    fontWeight: '500',
-  },
-});
