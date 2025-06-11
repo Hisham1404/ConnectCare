@@ -12,6 +12,8 @@ import {
 import { Mic, Bot, MicOff, Volume2, VolumeX, Heart, Headphones, Type, X, Play } from 'lucide-react-native';
 import { Colors } from '../../constants/Colors';
 import FeedbackButton from '../../components/ui/FeedbackButton';
+import { conversationalAgent, ConversationSession } from '../../lib/conversationalAgent';
+import { useAuth } from '../../hooks/useAuth';
 
 const { width, height } = Dimensions.get('window');
 
@@ -25,6 +27,7 @@ interface Message {
 }
 
 export default function DailyCheckinScreen() {
+  const { profile } = useAuth();
   const [isRecording, setIsRecording] = useState(false);
   const [isVoiceMode, setIsVoiceMode] = useState(false);
   const [isSpeakerOn, setIsSpeakerOn] = useState(true);
@@ -34,6 +37,8 @@ export default function DailyCheckinScreen() {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
+  const [conversationSession, setConversationSession] = useState<ConversationSession | null>(null);
+  const [isConnecting, setIsConnecting] = useState(false);
   
   const recordingTimer = useRef<NodeJS.Timeout>();
   const pulseAnimation = useRef(new Animated.Value(1)).current;
@@ -142,13 +147,52 @@ export default function DailyCheckinScreen() {
   }, [isProcessing]);
 
   const handleStartCheckin = () => {
-    setHasStarted(true);
-    setIsVoiceMode(true);
+    startConversationalCheckin();
+  };
+
+  const startConversationalCheckin = async () => {
+    if (!profile?.full_name || !profile?.id) {
+      console.error('Missing profile information');
+      return;
+    }
+
+    setIsConnecting(true);
+    
+    try {
+      // Start conversational AI session
+      const session = await conversationalAgent.startDailyCheckin(
+        profile.id,
+        profile.full_name
+      );
+      
+      setConversationSession(session);
+      setHasStarted(true);
+      setIsVoiceMode(true);
+      
+      console.log('🎙️ Conversational check-in started:', session.conversationId);
+    } catch (error) {
+      console.error('❌ Failed to start conversational check-in:', error);
+      // Fallback to regular check-in
+      setHasStarted(true);
+      setIsVoiceMode(true);
+    } finally {
+      setIsConnecting(false);
+    }
   };
 
   const handleVoiceRecording = () => {
     if (Platform.OS === 'web') {
       console.log('Voice recording placeholder - would work on mobile devices');
+      
+      // If we have a conversational session, we would connect to the WebSocket here
+      if (conversationSession) {
+        console.log('🔗 Would connect to WebSocket:', conversationSession.websocketUrl);
+        // In a real implementation, you would:
+        // 1. Connect to the WebSocket URL
+        // 2. Stream audio data to ElevenLabs
+        // 3. Receive and play back AI responses
+        // 4. Handle conversation flow automatically
+      }
     }
     
     if (!isRecording) {
@@ -174,12 +218,35 @@ export default function DailyCheckinScreen() {
           setIsVoiceMode(false);
           setHasStarted(false);
           setCurrentQuestion(0);
+          await endConversationalSession();
         }
         setRecordingDuration(0);
       }, 2000);
     }
   };
 
+  const endConversationalSession = async () => {
+    if (conversationSession) {
+      try {
+        await conversationalAgent.endConversation(
+          'Voice conversation completed via web interface',
+          'Daily check-in completed successfully',
+          recordingDuration,
+          {
+            painLevel: Math.floor(Math.random() * 10) + 1, // Mock data for demo
+            medicationCompliance: true,
+            overallMood: 'positive',
+            symptoms: []
+          }
+        );
+        console.log('✅ Conversational session ended successfully');
+      } catch (error) {
+        console.error('❌ Error ending conversational session:', error);
+      } finally {
+        setConversationSession(null);
+      }
+    }
+  };
   const handleTextSubmit = () => {
     if (textInput.trim()) {
       setIsProcessing(true);
@@ -213,12 +280,14 @@ export default function DailyCheckinScreen() {
     setRecordingDuration(0);
     setIsVoiceMode(false);
     setHasStarted(false);
+    endConversationalSession();
   };
 
   const exitVoiceMode = () => {
     setIsVoiceMode(false);
     setIsRecording(false);
     setHasStarted(false);
+    endConversationalSession();
     if (recordingTimer.current) {
       clearInterval(recordingTimer.current);
     }
@@ -383,6 +452,7 @@ export default function DailyCheckinScreen() {
             {/* Large Start Button */}
             <FeedbackButton
               onPress={handleStartCheckin}
+              disabled={isConnecting}
               style={styles.startCheckinButton}
               hapticFeedback={true}
             >
@@ -394,16 +464,22 @@ export default function DailyCheckinScreen() {
                   ] 
                 }
               ]}>
-                <Play color={Colors.surface} size={40} />
+                {isConnecting ? (
+                  <Heart color={Colors.surface} size={40} />
+                ) : (
+                  <Play color={Colors.surface} size={40} />
+                )}
               </Animated.View>
-              <Text style={styles.startButtonText}>Start Check-in</Text>
+              <Text style={styles.startButtonText}>
+                {isConnecting ? 'Connecting...' : 'Start Check-in'}
+              </Text>
             </FeedbackButton>
 
             {/* Features List */}
             <View style={styles.featuresList}>
               <View style={styles.featureItem}>
                 <Mic color={Colors.accent} size={16} />
-                <Text style={styles.featureText}>Voice-powered responses</Text>
+                <Text style={styles.featureText}>AI-powered voice conversations</Text>
               </View>
               <View style={styles.featureItem}>
                 <Heart color={Colors.heartRate} size={16} />
@@ -411,7 +487,7 @@ export default function DailyCheckinScreen() {
               </View>
               <View style={styles.featureItem}>
                 <Bot color={Colors.success} size={16} />
-                <Text style={styles.featureText}>AI-powered recommendations</Text>
+                <Text style={styles.featureText}>ElevenLabs conversational AI</Text>
               </View>
             </View>
           </View>
