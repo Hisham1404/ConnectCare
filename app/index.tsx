@@ -270,7 +270,7 @@ export default function WelcomeScreen() {
           </View>
 
           <Text style={styles.finalCtaNote}>
-            No registration required • Full feature access • Interactive demos
+            Create your account • Secure authentication • Full feature access
           </Text>
         </View>
 
