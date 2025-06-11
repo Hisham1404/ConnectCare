@@ -11,13 +11,10 @@ export default function RootLayout() {
   useFrameworkReady();
   
   const { user, loading } = useAuth();
-  const [hasNavigated, setHasNavigated] = useState(false);
 
-  // Handle navigation based on authentication status
+  // Redirect based on authentication status - moved before conditional return
   useEffect(() => {
-    if (!loading && !hasNavigated) {
-      setHasNavigated(true);
-      
+    if (!loading) {
       if (user) {
         // User is authenticated, redirect to main app
         router.replace('/(tabs)');
@@ -26,10 +23,10 @@ export default function RootLayout() {
         router.replace('/auth');
       }
     }
-  }, [user, loading, hasNavigated]);
+  }, [user, loading]);
 
   // Show loading screen while checking authentication
-  if (loading || !hasNavigated) {
+  if (loading) {
     return (
       <View style={styles.loadingContainer}>
         <LoadingSpinner size="large" />
