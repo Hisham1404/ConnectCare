@@ -1,5 +1,4 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from 'npm:@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -22,13 +21,13 @@ interface EndConversationRequest {
   };
 }
 
-serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
-
+Deno.serve(async (req) => {
   try {
+    // Handle CORS preflight requests
+    if (req.method === 'OPTIONS') {
+      return new Response('ok', { headers: corsHeaders })
+    }
+
     const { 
       conversationId,
       patientId,
@@ -43,31 +42,31 @@ serve(async (req) => {
     }
 
     // Get environment variables
-    const picaSecretKey = Deno.env.get('PICA_SECRET_KEY')
-    const picaConnectionKey = Deno.env.get('PICA_ELEVENLABS_CONNECTION_KEY')
+    const elevenLabsApiKey = Deno.env.get('ELEVENLABS_API_KEY')
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
-    if (!picaSecretKey || !picaConnectionKey) {
-      throw new Error('Missing Pica environment variables')
+    if (!elevenLabsApiKey) {
+      console.warn('Missing ELEVENLABS_API_KEY - conversation will not be ended via API')
     }
 
-    // End conversation via Pica API
-    const endResponse = await fetch('https://api.picaos.com/v1/passthrough/v1/convai/conversations/end', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-pica-secret': picaSecretKey,
-        'x-pica-connection-key': picaConnectionKey,
-        'x-pica-action-id': 'conn_mod_def::GCcb_iT9I0k::end_conversation_action_id'
-      },
-      body: JSON.stringify({
-        conversation_id: conversationId
-      })
-    })
+    // End conversation via ElevenLabs API if key is available
+    if (elevenLabsApiKey) {
+      try {
+        const endResponse = await fetch(`https://api.elevenlabs.io/v1/convai/conversations/${conversationId}/end`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'xi-api-key': elevenLabsApiKey
+          }
+        })
 
-    if (!endResponse.ok) {
-      console.warn(`Failed to end conversation via Pica API: ${endResponse.status}`)
+        if (!endResponse.ok) {
+          console.warn(`Failed to end conversation via ElevenLabs API: ${endResponse.status}`)
+        }
+      } catch (error) {
+        console.warn('Error ending conversation via API:', error)
+      }
     }
 
     // Save conversation data to Supabase if available

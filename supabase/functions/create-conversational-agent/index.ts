@@ -1,4 +1,4 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'npm:@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -55,13 +55,13 @@ interface ElevenLabsAgentConfig {
   name: string;
 }
 
-serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
-
+Deno.serve(async (req) => {
   try {
+    // Handle CORS preflight requests
+    if (req.method === 'OPTIONS') {
+      return new Response('ok', { headers: corsHeaders })
+    }
+
     const { 
       patientId, 
       patientName = 'Patient',
@@ -72,11 +72,10 @@ serve(async (req) => {
     }: ConversationalAgentRequest = await req.json()
 
     // Get environment variables
-    const picaSecretKey = Deno.env.get('PICA_SECRET_KEY')
-    const picaConnectionKey = Deno.env.get('PICA_ELEVENLABS_CONNECTION_KEY')
+    const elevenLabsApiKey = Deno.env.get('ELEVENLABS_API_KEY')
 
-    if (!picaSecretKey || !picaConnectionKey) {
-      throw new Error('Missing required environment variables: PICA_SECRET_KEY or PICA_ELEVENLABS_CONNECTION_KEY')
+    if (!elevenLabsApiKey) {
+      throw new Error('Missing required environment variable: ELEVENLABS_API_KEY')
     }
 
     // Create comprehensive medical prompt for ConnectCare AI
@@ -154,21 +153,20 @@ Remember: You are a supportive health companion, not a replacement for medical p
       name: `ConnectCare AI - ${patientName} Daily Check-in`
     }
 
-    // Make request to Pica Passthrough API
-    const response = await fetch('https://api.picaos.com/v1/passthrough/v1/convai/agents/create', {
+    // Make request to ElevenLabs API directly
+    const response = await fetch('https://api.elevenlabs.io/v1/convai/agents', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-pica-secret': picaSecretKey,
-        'x-pica-connection-key': picaConnectionKey,
-        'x-pica-action-id': 'conn_mod_def::GCcb_iT9I0k::xNo_w809TEu2pRzqcCQ4_w'
+        'xi-api-key': elevenLabsApiKey
       },
       body: JSON.stringify(agentConfig)
     })
 
     if (!response.ok) {
       const errorText = await response.text()
-      throw new Error(`Pica API error: ${response.status} - ${errorText}`)
+      console.error('ElevenLabs API error:', response.status, errorText)
+      throw new Error(`ElevenLabs API error: ${response.status} - ${errorText}`)
     }
 
     const result = await response.json()
