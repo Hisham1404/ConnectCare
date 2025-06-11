@@ -1,3 +1,5 @@
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -15,13 +17,13 @@ interface StartConversationRequest {
   };
 }
 
-Deno.serve(async (req) => {
-  try {
-    // Handle CORS preflight requests
-    if (req.method === 'OPTIONS') {
-      return new Response('ok', { headers: corsHeaders })
-    }
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
 
+  try {
     const { 
       agentId, 
       patientId,
@@ -33,10 +35,11 @@ Deno.serve(async (req) => {
     }
 
     // Get environment variables
-    const elevenLabsApiKey = Deno.env.get('ELEVENLABS_API_KEY')
+    const picaSecretKey = Deno.env.get('PICA_SECRET_KEY')
+    const picaConnectionKey = Deno.env.get('PICA_ELEVENLABS_CONNECTION_KEY')
 
-    if (!elevenLabsApiKey) {
-      throw new Error('Missing required environment variable: ELEVENLABS_API_KEY')
+    if (!picaSecretKey || !picaConnectionKey) {
+      throw new Error('Missing required environment variables')
     }
 
     // Prepare conversation initialization data
@@ -50,19 +53,20 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Start conversation via ElevenLabs API
-    const response = await fetch('https://api.elevenlabs.io/v1/convai/conversations', {
+    // Start conversation via Pica API
+    const response = await fetch('https://api.picaos.com/v1/passthrough/v1/convai/conversations/start', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'xi-api-key': elevenLabsApiKey
+        'x-pica-secret': picaSecretKey,
+        'x-pica-connection-key': picaConnectionKey,
+        'x-pica-action-id': 'conn_mod_def::GCcb_iT9I0k::start_conversation_action_id'
       },
       body: JSON.stringify(conversationConfig)
     })
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('ElevenLabs API error:', response.status, errorText)
       throw new Error(`Failed to start conversation: ${response.status} - ${errorText}`)
     }
 
@@ -76,7 +80,7 @@ Deno.serve(async (req) => {
         conversation_id: result.conversation_id,
         agent_id: agentId,
         patient_id: patientId,
-        websocket_url: result.websocket_url || result.signed_url,
+        websocket_url: result.websocket_url,
         session_token: result.session_token,
         started_at: new Date().toISOString(),
         message: 'Conversation started successfully'
