@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { ArrowLeft, Mail, Heart, CheckCircle } from 'lucide-react-native';
+import { ArrowLeft, Mail, Heart, CircleCheck as CheckCircle } from 'lucide-react-native';
 import { Colors } from '../../constants/Colors';
 import { supabase } from '../../lib/supabase';
 import FeedbackButton from '../../components/ui/FeedbackButton';
