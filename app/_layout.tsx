@@ -12,17 +12,7 @@ export default function RootLayout() {
   
   const { user, loading } = useAuth();
 
-  // Show loading screen while checking authentication
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <LoadingSpinner size="large" />
-        <Text style={styles.loadingText}>Loading ConnectCare AI...</Text>
-      </View>
-    );
-  }
-
-  // Redirect based on authentication status
+  // Redirect based on authentication status - moved before conditional return
   useEffect(() => {
     if (!loading) {
       if (user) {
@@ -34,6 +24,16 @@ export default function RootLayout() {
       }
     }
   }, [user, loading]);
+
+  // Show loading screen while checking authentication
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <LoadingSpinner size="large" />
+        <Text style={styles.loadingText}>Loading ConnectCare AI...</Text>
+      </View>
+    );
+  }
 
   return (
     <>
