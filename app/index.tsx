@@ -6,8 +6,10 @@ import { Colors } from '@/constants/Colors';
 
 export default function IndexScreen() {
   useEffect(() => {
-    // Immediately redirect to welcome screen
-    router.replace('/welcome');
+    // Defer navigation to next tick to allow Root Layout to mount
+    setTimeout(() => {
+      router.replace('/welcome');
+    }, 0);
   }, []);
 
   return (
