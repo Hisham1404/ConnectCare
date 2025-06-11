@@ -10,12 +10,26 @@ import {
 } from 'react-native';
 import { Heart, Activity, Thermometer, Droplets, Weight, Ruler, TrendingUp, TrendingDown, Calendar, Clock, Plus, ChartBar as BarChart3, ChartLine as LineChart, Target, Award, Zap } from 'lucide-react-native';
 import { Colors } from '../../constants/Colors';
+import FeedbackButton from '../../components/ui/FeedbackButton';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import SkeletonLoader from '../../components/ui/SkeletonLoader';
 
 const { width } = Dimensions.get('window');
 
 export default function HealthScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState('week');
+  const [isLoadingData, setIsLoadingData] = useState(true);
+
+  // Simulate data loading
+  useEffect(() => {
+    const loadData = async () => {
+      await new Promise(resolve => setTimeout(resolve, 1200));
+      setIsLoadingData(false);
+    };
+    
+    loadData();
+  }, []);
 
   const periods = [
     { key: 'day', label: 'Day' },
@@ -247,9 +261,12 @@ export default function HealthScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Health Tracking</Text>
-        <TouchableOpacity style={styles.addButton}>
+        <FeedbackButton
+          onPress={() => console.log('Add health data')}
+          style={styles.addButton}
+        >
           <Plus color={Colors.accent} size={20} />
-        </TouchableOpacity>
+        </FeedbackButton>
       </View>
 
       {/* Enhanced Period Selector - Segmented Control */}
@@ -257,13 +274,13 @@ export default function HealthScreen() {
         <Text style={styles.periodSelectorTitle}>Time Period</Text>
         <View style={styles.segmentedControl}>
           {periods.map((period) => (
-            <TouchableOpacity
+            <FeedbackButton
               key={period.key}
+              onPress={() => setSelectedPeriod(period.key)}
               style={[
                 styles.segmentButton,
                 selectedPeriod === period.key && styles.activeSegmentButton
               ]}
-              onPress={() => setSelectedPeriod(period.key)}
             >
               <Text style={[
                 styles.segmentText,
@@ -271,7 +288,7 @@ export default function HealthScreen() {
               ]}>
                 {period.label}
               </Text>
-            </TouchableOpacity>
+            </FeedbackButton>
           ))}
         </View>
       </View>
@@ -281,40 +298,55 @@ export default function HealthScreen() {
         <Text style={styles.sectionTitle}>Health Metrics</Text>
         
         <View style={styles.metricsGrid}>
-          {healthMetrics.map((metric) => {
-            const TrendIcon = getTrendIcon(metric.trend);
-            const trendColor = getTrendColor(metric.trend);
-            
-            return (
-              <TouchableOpacity key={metric.id} style={styles.enhancedMetricCard}>
-                <View style={styles.metricCardHeader}>
-                  <View style={[styles.metricIcon, { backgroundColor: `${metric.color}${Colors.opacity.light}` }]}>
-                    <metric.icon color={metric.color} size={24} />
+          {isLoadingData ? (
+            <>
+              <SkeletonLoader width={(width - 56) / 2} height={200} borderRadius={20} />
+              <SkeletonLoader width={(width - 56) / 2} height={200} borderRadius={20} />
+              <SkeletonLoader width={(width - 56) / 2} height={200} borderRadius={20} />
+              <SkeletonLoader width={(width - 56) / 2} height={200} borderRadius={20} />
+              <SkeletonLoader width={(width - 56) / 2} height={200} borderRadius={20} />
+              <SkeletonLoader width={(width - 56) / 2} height={200} borderRadius={20} />
+            </>
+          ) : (
+            healthMetrics.map((metric) => {
+              const TrendIcon = getTrendIcon(metric.trend);
+              const trendColor = getTrendColor(metric.trend);
+              
+              return (
+                <FeedbackButton 
+                  key={metric.id} 
+                  onPress={() => console.log('Metric pressed:', metric.label)}
+                  style={styles.enhancedMetricCard}
+                >
+                  <View style={styles.metricCardHeader}>
+                    <View style={[styles.metricIcon, { backgroundColor: `${metric.color}${Colors.opacity.light}` }]}>
+                      <metric.icon color={metric.color} size={24} />
+                    </View>
+                    <View style={styles.metricTrend}>
+                      <TrendIcon color={trendColor} size={16} />
+                      <Text style={[styles.metricChange, { color: trendColor }]}>
+                        {metric.change}
+                      </Text>
+                    </View>
                   </View>
-                  <View style={styles.metricTrend}>
-                    <TrendIcon color={trendColor} size={16} />
-                    <Text style={[styles.metricChange, { color: trendColor }]}>
-                      {metric.change}
-                    </Text>
+                  
+                  <Text style={styles.enhancedMetricValue}>
+                    {metric.value}
+                    <Text style={styles.enhancedMetricUnit}> {metric.unit}</Text>
+                  </Text>
+                  <Text style={styles.metricLabel}>{metric.label}</Text>
+                  <Text style={styles.metricNormal}>Normal: {metric.normal}</Text>
+                  
+                  {/* Enhanced Mini Chart */}
+                  <View style={styles.enhancedChartContainer}>
+                    {renderMiniChart(metric.readings, metric.color)}
                   </View>
-                </View>
-                
-                <Text style={styles.enhancedMetricValue}>
-                  {metric.value}
-                  <Text style={styles.enhancedMetricUnit}> {metric.unit}</Text>
-                </Text>
-                <Text style={styles.metricLabel}>{metric.label}</Text>
-                <Text style={styles.metricNormal}>Normal: {metric.normal}</Text>
-                
-                {/* Enhanced Mini Chart */}
-                <View style={styles.enhancedChartContainer}>
-                  {renderMiniChart(metric.readings, metric.color)}
-                </View>
-                
-                <Text style={styles.metricLastReading}>{metric.lastReading}</Text>
-              </TouchableOpacity>
-            );
-          })}
+                  
+                  <Text style={styles.metricLastReading}>{metric.lastReading}</Text>
+                </FeedbackButton>
+              );
+            })
+          )}
         </View>
       </View>
 
@@ -322,39 +354,52 @@ export default function HealthScreen() {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Health Goals</Text>
-          <TouchableOpacity>
+          <FeedbackButton onPress={() => console.log('View all goals')}>
             <Text style={styles.seeAll}>View All</Text>
-          </TouchableOpacity>
+          </FeedbackButton>
         </View>
         
         <View style={styles.goalsGrid}>
-          {healthGoals.map((goal) => (
-            <View key={goal.id} style={styles.goalCard}>
-              <View style={styles.goalHeader}>
-                <View style={[styles.goalIcon, { backgroundColor: `${goal.color}${Colors.opacity.light}` }]}>
-                  <goal.icon color={goal.color} size={18} />
+          {isLoadingData ? (
+            <>
+              <SkeletonLoader width={(width - 52) / 2} height={120} borderRadius={16} />
+              <SkeletonLoader width={(width - 52) / 2} height={120} borderRadius={16} />
+              <SkeletonLoader width={(width - 52) / 2} height={120} borderRadius={16} />
+              <SkeletonLoader width={(width - 52) / 2} height={120} borderRadius={16} />
+            </>
+          ) : (
+            healthGoals.map((goal) => (
+              <FeedbackButton
+                key={goal.id}
+                onPress={() => console.log('Goal pressed:', goal.title)}
+                style={styles.goalCard}
+              >
+                <View style={styles.goalHeader}>
+                  <View style={[styles.goalIcon, { backgroundColor: `${goal.color}${Colors.opacity.light}` }]}>
+                    <goal.icon color={goal.color} size={18} />
+                  </View>
+                  <Text style={styles.goalProgress}>{goal.progress}%</Text>
                 </View>
-                <Text style={styles.goalProgress}>{goal.progress}%</Text>
-              </View>
-              
-              <Text style={styles.goalTitle}>{goal.title}</Text>
-              <Text style={styles.goalValue}>
-                {goal.current} / {goal.target} {goal.unit}
-              </Text>
-              
-              <View style={styles.goalProgressBar}>
-                <View 
-                  style={[
-                    styles.goalProgressFill,
-                    { 
-                      width: `${goal.progress}%`,
-                      backgroundColor: goal.color 
-                    }
-                  ]} 
-                />
-              </View>
-            </View>
-          ))}
+                
+                <Text style={styles.goalTitle}>{goal.title}</Text>
+                <Text style={styles.goalValue}>
+                  {goal.current} / {goal.target} {goal.unit}
+                </Text>
+                
+                <View style={styles.goalProgressBar}>
+                  <View 
+                    style={[
+                      styles.goalProgressFill,
+                      { 
+                        width: `${goal.progress}%`,
+                        backgroundColor: goal.color 
+                      }
+                    ]} 
+                  />
+                </View>
+              </FeedbackButton>
+            ))
+          )}
         </View>
       </View>
 
@@ -362,32 +407,45 @@ export default function HealthScreen() {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Recent Readings</Text>
-          <TouchableOpacity>
+          <FeedbackButton onPress={() => console.log('View trends')}>
             <LineChart color={Colors.accent} size={20} />
-          </TouchableOpacity>
+          </FeedbackButton>
         </View>
         
-        {recentReadings.map((reading) => (
-          <View key={reading.id} style={styles.readingCard}>
-            <View style={styles.readingInfo}>
-              <Text style={styles.readingType}>{reading.type}</Text>
-              <Text style={styles.readingValue}>{reading.value}</Text>
-              <Text style={styles.readingTime}>{reading.time}</Text>
-            </View>
-            
-            <View style={[
-              styles.readingStatus,
-              { backgroundColor: `${getStatusColor(reading.status)}${Colors.opacity.light}` }
-            ]}>
-              <Text style={[
-                styles.readingStatusText,
-                { color: getStatusColor(reading.status) }
+        {isLoadingData ? (
+          <>
+            <SkeletonLoader width="100%" height={80} borderRadius={16} style={{ marginBottom: 12 }} />
+            <SkeletonLoader width="100%" height={80} borderRadius={16} style={{ marginBottom: 12 }} />
+            <SkeletonLoader width="100%" height={80} borderRadius={16} style={{ marginBottom: 12 }} />
+            <SkeletonLoader width="100%" height={80} borderRadius={16} />
+          </>
+        ) : (
+          recentReadings.map((reading) => (
+            <FeedbackButton
+              key={reading.id}
+              onPress={() => console.log('Reading pressed:', reading.type)}
+              style={styles.readingCard}
+            >
+              <View style={styles.readingInfo}>
+                <Text style={styles.readingType}>{reading.type}</Text>
+                <Text style={styles.readingValue}>{reading.value}</Text>
+                <Text style={styles.readingTime}>{reading.time}</Text>
+              </View>
+              
+              <View style={[
+                styles.readingStatus,
+                { backgroundColor: `${getStatusColor(reading.status)}${Colors.opacity.light}` }
               ]}>
-                {reading.status.toUpperCase()}
-              </Text>
-            </View>
-          </View>
-        ))}
+                <Text style={[
+                  styles.readingStatusText,
+                  { color: getStatusColor(reading.status) }
+                ]}>
+                  {reading.status.toUpperCase()}
+                </Text>
+              </View>
+            </FeedbackButton>
+          ))
+        )}
       </View>
 
       {/* Quick Actions */}
@@ -395,33 +453,45 @@ export default function HealthScreen() {
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         
         <View style={styles.quickActionsGrid}>
-          <TouchableOpacity style={styles.quickActionCard}>
+          <FeedbackButton
+            onPress={() => console.log('Log vitals')}
+            style={styles.quickActionCard}
+          >
             <View style={[styles.quickActionIcon, { backgroundColor: `${Colors.heartRate}${Colors.opacity.light}` }]}>
               <Heart color={Colors.heartRate} size={20} />
             </View>
             <Text style={styles.quickActionTitle}>Log Vitals</Text>
-          </TouchableOpacity>
+          </FeedbackButton>
           
-          <TouchableOpacity style={styles.quickActionCard}>
+          <FeedbackButton
+            onPress={() => console.log('Record exercise')}
+            style={styles.quickActionCard}
+          >
             <View style={[styles.quickActionIcon, { backgroundColor: `${Colors.accent}${Colors.opacity.light}` }]}>
               <Activity color={Colors.accent} size={20} />
             </View>
             <Text style={styles.quickActionTitle}>Record Exercise</Text>
-          </TouchableOpacity>
+          </FeedbackButton>
           
-          <TouchableOpacity style={styles.quickActionCard}>
+          <FeedbackButton
+            onPress={() => console.log('View trends')}
+            style={styles.quickActionCard}
+          >
             <View style={[styles.quickActionIcon, { backgroundColor: `${Colors.success}${Colors.opacity.light}` }]}>
               <Award color={Colors.success} size={20} />
             </View>
             <Text style={styles.quickActionTitle}>View Trends</Text>
-          </TouchableOpacity>
+          </FeedbackButton>
           
-          <TouchableOpacity style={styles.quickActionCard}>
+          <FeedbackButton
+            onPress={() => console.log('Set reminders')}
+            style={styles.quickActionCard}
+          >
             <View style={[styles.quickActionIcon, { backgroundColor: `${Colors.warning}${Colors.opacity.light}` }]}>
               <Calendar color={Colors.warning} size={20} />
             </View>
             <Text style={styles.quickActionTitle}>Set Reminders</Text>
-          </TouchableOpacity>
+          </FeedbackButton>
         </View>
       </View>
     </ScrollView>

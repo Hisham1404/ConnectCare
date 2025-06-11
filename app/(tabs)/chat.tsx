@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Mic, Bot, MicOff, Volume2, VolumeX, Heart, Headphones, Type, X, Play } from 'lucide-react-native';
 import { Colors } from '../../constants/Colors';
+import FeedbackButton from '../../components/ui/FeedbackButton';
 
 const { width, height } = Dimensions.get('window');
 
@@ -237,12 +238,12 @@ export default function DailyCheckinScreen() {
         }
       ]}>
         {/* Exit Button */}
-        <TouchableOpacity 
-          style={styles.exitButton}
+        <FeedbackButton 
           onPress={exitVoiceMode}
+          style={styles.exitButton}
         >
           <X color={Colors.surface} size={24} />
-        </TouchableOpacity>
+        </FeedbackButton>
 
         {/* Voice Animation Container */}
         <View style={styles.voiceModeContent}>
@@ -282,10 +283,10 @@ export default function DailyCheckinScreen() {
               opacity: fadeAnimation,
             }
           ]}>
-            <TouchableOpacity
-              style={styles.voiceOrbButton}
+            <FeedbackButton
               onPress={handleVoiceRecording}
-              activeOpacity={0.8}
+              style={styles.voiceOrbButton}
+              hapticFeedback={true}
             >
               {isProcessing ? (
                 <Heart color={Colors.surface} size={48} />
@@ -294,7 +295,7 @@ export default function DailyCheckinScreen() {
               ) : (
                 <Mic color={Colors.surface} size={48} />
               )}
-            </TouchableOpacity>
+            </FeedbackButton>
           </Animated.View>
 
           {/* Voice Status Text */}
@@ -359,16 +360,16 @@ export default function DailyCheckinScreen() {
             </View>
           </View>
           
-          <TouchableOpacity 
-            style={styles.speakerButton}
+          <FeedbackButton 
             onPress={() => setIsSpeakerOn(!isSpeakerOn)}
+            style={styles.speakerButton}
           >
             {isSpeakerOn ? (
               <Volume2 color={Colors.accent} size={20} />
             ) : (
               <VolumeX color={Colors.textSecondary} size={20} />
             )}
-          </TouchableOpacity>
+          </FeedbackButton>
         </View>
 
         {/* Main Content - Start Check-in */}
@@ -380,10 +381,10 @@ export default function DailyCheckinScreen() {
             </Text>
             
             {/* Large Start Button */}
-            <TouchableOpacity
-              style={styles.startCheckinButton}
+            <FeedbackButton
               onPress={handleStartCheckin}
-              activeOpacity={0.8}
+              style={styles.startCheckinButton}
+              hapticFeedback={true}
             >
               <Animated.View style={[
                 styles.startButtonInner,
@@ -396,7 +397,7 @@ export default function DailyCheckinScreen() {
                 <Play color={Colors.surface} size={40} />
               </Animated.View>
               <Text style={styles.startButtonText}>Start Check-in</Text>
-            </TouchableOpacity>
+            </FeedbackButton>
 
             {/* Features List */}
             <View style={styles.featuresList}>
@@ -417,16 +418,16 @@ export default function DailyCheckinScreen() {
 
           {/* Alternative Options */}
           <View style={styles.alternativeOptions}>
-            <TouchableOpacity
-              style={styles.alternativeButton}
+            <FeedbackButton
               onPress={() => {
                 setHasStarted(true);
                 setShowTextInput(true);
               }}
+              style={styles.alternativeButton}
             >
               <Type color={Colors.textSecondary} size={20} />
               <Text style={styles.alternativeButtonText}>Use Text Instead</Text>
-            </TouchableOpacity>
+            </FeedbackButton>
           </View>
         </View>
       </View>
@@ -491,15 +492,15 @@ export default function DailyCheckinScreen() {
         {/* Central Voice Interface */}
         <View style={styles.voiceInterface}>
           {/* Main Voice Button */}
-          <TouchableOpacity
+          <FeedbackButton
+            onPress={handleVoiceRecording}
+            disabled={isProcessing}
             style={[
               styles.mainVoiceButton,
               isRecording && styles.recordingButton,
               isProcessing && styles.processingButton
             ]}
-            onPress={handleVoiceRecording}
-            disabled={isProcessing}
-            activeOpacity={0.8}
+            hapticFeedback={true}
           >
             <Animated.View style={[
               styles.voiceButtonInner,
@@ -515,7 +516,7 @@ export default function DailyCheckinScreen() {
                 <Mic color={Colors.surface} size={32} />
               )}
             </Animated.View>
-          </TouchableOpacity>
+          </FeedbackButton>
 
           {/* Status Text */}
           <Text style={styles.statusText}>
@@ -525,21 +526,21 @@ export default function DailyCheckinScreen() {
 
         {/* Bottom Action Buttons */}
         <View style={styles.bottomActions}>
-          <TouchableOpacity
-            style={styles.actionButton}
+          <FeedbackButton
             onPress={() => setShowTextInput(!showTextInput)}
+            style={styles.actionButton}
           >
             <Type color={Colors.textSecondary} size={20} />
             <Text style={styles.actionButtonText}>Type Instead</Text>
-          </TouchableOpacity>
+          </FeedbackButton>
 
-          <TouchableOpacity
-            style={styles.actionButton}
+          <FeedbackButton
             onPress={resetCheckin}
+            style={styles.actionButton}
           >
             <Headphones color={Colors.textSecondary} size={20} />
             <Text style={styles.actionButtonText}>Start Over</Text>
-          </TouchableOpacity>
+          </FeedbackButton>
         </View>
 
         {/* Text Input (when enabled) */}
@@ -554,13 +555,14 @@ export default function DailyCheckinScreen() {
               multiline
               autoFocus
             />
-            <TouchableOpacity
-              style={[styles.submitButton, textInput.trim() && styles.submitButtonActive]}
+            <FeedbackButton
               onPress={handleTextSubmit}
               disabled={!textInput.trim()}
+              style={[styles.submitButton, textInput.trim() && styles.submitButtonActive]}
+              hapticFeedback={true}
             >
               <Text style={styles.submitButtonText}>Submit</Text>
-            </TouchableOpacity>
+            </FeedbackButton>
           </Animated.View>
         )}
       </View>
