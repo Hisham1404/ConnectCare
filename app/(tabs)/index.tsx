@@ -8,8 +8,9 @@ import {
   Image,
   Dimensions,
   RefreshControl,
+  FlatList,
 } from 'react-native';
-import { Pill, Heart, Activity, Calendar, Clock, User, TrendingUp, CircleAlert as AlertCircle, CircleCheck as CheckCircle, Apple, Dumbbell, Thermometer, Droplets, Zap, Target, Award, Bell, Phone, Video, MessageSquare, Plus } from 'lucide-react-native';
+import { Pill, Heart, Activity, Calendar, Clock, User, TrendingUp, CircleAlert as AlertCircle, CircleCheck as CheckCircle, Apple, Dumbbell, Thermometer, Droplets, Zap, Target, Award, Bell, Phone, Video, MessageSquare, Plus, ChevronRight } from 'lucide-react-native';
 import { useAuth } from '../../hooks/useAuth';
 import { Colors, SemanticColors } from '../../constants/Colors';
 
@@ -47,6 +48,15 @@ export default function PatientDashboard() {
       taken: false,
       type: 'Cholesterol medication',
       nextDose: '8:00 PM',
+    },
+    {
+      id: '4',
+      name: 'Lisinopril',
+      dosage: '10mg',
+      time: '06:00 AM',
+      taken: true,
+      type: 'Blood pressure',
+      nextDose: 'Tomorrow 6:00 AM',
     },
   ];
 
@@ -149,6 +159,16 @@ export default function PatientDashboard() {
       completed: true,
       progress: 100,
     },
+    {
+      id: '5',
+      category: 'Recovery',
+      title: 'Wound Care',
+      description: 'Clean and dress surgical site as instructed.',
+      icon: Heart,
+      color: Colors.primary,
+      completed: true,
+      progress: 100,
+    },
   ];
 
   const recoveryProgress = {
@@ -192,6 +212,73 @@ export default function PatientDashboard() {
     return healthRecommendations.filter(rec => rec.completed).length;
   };
 
+  const renderMedicationCard = ({ item }: { item: any }) => (
+    <View style={styles.medicationCarouselCard}>
+      <View style={styles.medicationCarouselHeader}>
+        <View style={[
+          styles.medicationCarouselIcon,
+          { backgroundColor: item.taken ? `${Colors.success}${Colors.opacity.light}` : `${Colors.warning}${Colors.opacity.light}` }
+        ]}>
+          <Pill color={item.taken ? Colors.success : Colors.warning} size={18} />
+        </View>
+        <View style={[
+          styles.medicationCarouselStatus,
+          { backgroundColor: item.taken ? Colors.success : Colors.warning }
+        ]}>
+          {item.taken ? (
+            <CheckCircle color="#ffffff" size={12} />
+          ) : (
+            <Clock color="#ffffff" size={12} />
+          )}
+        </View>
+      </View>
+      
+      <Text style={styles.medicationCarouselName}>{item.name}</Text>
+      <Text style={styles.medicationCarouselDosage}>{item.dosage}</Text>
+      <Text style={styles.medicationCarouselTime}>{item.time}</Text>
+      
+      {!item.taken && (
+        <Text style={styles.medicationCarouselNext}>Next: {item.nextDose}</Text>
+      )}
+    </View>
+  );
+
+  const renderRecommendationCard = ({ item }: { item: any }) => (
+    <View style={styles.recommendationCarouselCard}>
+      <View style={styles.recommendationCarouselHeader}>
+        <View style={[
+          styles.recommendationCarouselIcon,
+          { backgroundColor: `${item.color}${Colors.opacity.light}` }
+        ]}>
+          <item.icon color={item.color} size={16} />
+        </View>
+        {item.completed && (
+          <View style={styles.recommendationCarouselBadge}>
+            <CheckCircle color={Colors.success} size={10} />
+          </View>
+        )}
+      </View>
+      
+      <Text style={styles.recommendationCarouselCategory}>{item.category}</Text>
+      <Text style={styles.recommendationCarouselTitle}>{item.title}</Text>
+      
+      <View style={styles.recommendationCarouselProgress}>
+        <View style={styles.recommendationCarouselProgressBar}>
+          <View 
+            style={[
+              styles.recommendationCarouselProgressFill,
+              { 
+                width: `${item.progress}%`,
+                backgroundColor: item.color 
+              }
+            ]} 
+          />
+        </View>
+        <Text style={styles.recommendationCarouselProgressText}>{item.progress}%</Text>
+      </View>
+    </View>
+  );
+
   return (
     <ScrollView 
       style={styles.container}
@@ -229,14 +316,14 @@ export default function PatientDashboard() {
         </View>
       </View>
 
-      {/* Recovery Progress Overview */}
+      {/* Recovery Progress Overview - Enhanced Visual Hierarchy */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Recovery Progress</Text>
         
         <View style={styles.progressCard}>
           <View style={styles.progressHeader}>
             <Text style={styles.progressTitle}>Overall Recovery</Text>
-            <Text style={styles.progressPercentage}>{recoveryProgress.overall}%</Text>
+            <Text style={styles.progressPercentageEnhanced}>{recoveryProgress.overall}%</Text>
           </View>
           
           <View style={styles.progressBarContainer}>
@@ -271,46 +358,25 @@ export default function PatientDashboard() {
         </View>
       </View>
 
-      {/* Today's Medications */}
+      {/* Today's Medications - Horizontal Carousel */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Today's Medications</Text>
-          <TouchableOpacity>
+          <TouchableOpacity style={styles.seeAllButton}>
             <Text style={styles.seeAll}>View All</Text>
+            <ChevronRight color={Colors.accent} size={16} />
           </TouchableOpacity>
         </View>
 
-        {todaysMedications.map((medication) => (
-          <View key={medication.id} style={styles.medicationCard}>
-            <View style={styles.medicationLeft}>
-              <View style={[
-                styles.medicationIcon,
-                { backgroundColor: medication.taken ? `${Colors.success}${Colors.opacity.light}` : `${Colors.warning}${Colors.opacity.light}` }
-              ]}>
-                <Pill color={medication.taken ? Colors.success : Colors.warning} size={20} />
-              </View>
-              <View style={styles.medicationInfo}>
-                <Text style={styles.medicationName}>{medication.name}</Text>
-                <Text style={styles.medicationType}>{medication.type}</Text>
-                <Text style={styles.medicationDosage}>{medication.dosage} • {medication.time}</Text>
-                {!medication.taken && (
-                  <Text style={styles.nextDose}>Next: {medication.nextDose}</Text>
-                )}
-              </View>
-            </View>
-            
-            <TouchableOpacity style={[
-              styles.medicationStatus,
-              { backgroundColor: medication.taken ? Colors.success : Colors.warning }
-            ]}>
-              {medication.taken ? (
-                <CheckCircle color="#ffffff\" size={16} />
-              ) : (
-                <Clock color="#ffffff" size={16} />
-              )}
-            </TouchableOpacity>
-          </View>
-        ))}
+        <FlatList
+          data={todaysMedications}
+          renderItem={renderMedicationCard}
+          keyExtractor={(item) => item.id}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.carouselContainer}
+          ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
+        />
       </View>
 
       {/* Health Metrics */}
@@ -410,65 +476,27 @@ export default function PatientDashboard() {
         </View>
       </View>
 
-      {/* Health Recommendations */}
+      {/* Health Recommendations - Horizontal Carousel */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Today's Health Plan</Text>
-          <Text style={styles.completionText}>
-            {getCompletedRecommendations()}/{healthRecommendations.length} completed
-          </Text>
+          <View style={styles.completionContainer}>
+            <Text style={styles.completionText}>
+              {getCompletedRecommendations()}/{healthRecommendations.length} completed
+            </Text>
+            <ChevronRight color={Colors.success} size={16} />
+          </View>
         </View>
         
-        {healthRecommendations.map((recommendation) => (
-          <View key={recommendation.id} style={styles.recommendationCard}>
-            <View style={styles.recommendationLeft}>
-              <View style={[
-                styles.recommendationIcon,
-                { backgroundColor: `${recommendation.color}${Colors.opacity.light}` }
-              ]}>
-                <recommendation.icon color={recommendation.color} size={20} />
-              </View>
-              <View style={styles.recommendationInfo}>
-                <View style={styles.recommendationHeader}>
-                  <Text style={styles.recommendationCategory}>{recommendation.category}</Text>
-                  {recommendation.completed && (
-                    <View style={styles.completedBadge}>
-                      <CheckCircle color={Colors.success} size={12} />
-                    </View>
-                  )}
-                </View>
-                <Text style={styles.recommendationTitle}>{recommendation.title}</Text>
-                <Text style={styles.recommendationDescription}>{recommendation.description}</Text>
-                
-                <View style={styles.recommendationProgress}>
-                  <View style={styles.recommendationProgressBar}>
-                    <View 
-                      style={[
-                        styles.recommendationProgressFill,
-                        { 
-                          width: `${recommendation.progress}%`,
-                          backgroundColor: recommendation.color 
-                        }
-                      ]} 
-                    />
-                  </View>
-                  <Text style={styles.recommendationProgressText}>{recommendation.progress}%</Text>
-                </View>
-              </View>
-            </View>
-            
-            <TouchableOpacity style={[
-              styles.recommendationAction,
-              recommendation.completed && styles.recommendationCompleted
-            ]}>
-              {recommendation.completed ? (
-                <CheckCircle color={Colors.success} size={20} />
-              ) : (
-                <Target color={Colors.textSecondary} size={20} />
-              )}
-            </TouchableOpacity>
-          </View>
-        ))}
+        <FlatList
+          data={healthRecommendations}
+          renderItem={renderRecommendationCard}
+          keyExtractor={(item) => item.id}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.carouselContainer}
+          ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
+        />
       </View>
 
       {/* Quick Actions */}
@@ -595,10 +623,20 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.textPrimary,
   },
+  seeAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
   seeAll: {
     fontSize: 14,
     color: Colors.accent,
     fontWeight: '600',
+  },
+  completionContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   completionText: {
     fontSize: 14,
@@ -640,10 +678,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.textPrimary,
   },
-  progressPercentage: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: Colors.success,
+  progressPercentageEnhanced: {
+    fontSize: 32,
+    fontWeight: '900',
+    color: Colors.primary,
+    textShadowColor: `${Colors.primary}${Colors.opacity.light}`,
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   progressBarContainer: {
     marginBottom: 20,
@@ -655,7 +696,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: Colors.success,
+    backgroundColor: Colors.primary,
     borderRadius: 4,
   },
   progressMetrics: {
@@ -675,63 +716,128 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.textPrimary,
   },
-  medicationCard: {
+  carouselContainer: {
+    paddingLeft: 0,
+    paddingRight: 20,
+  },
+  medicationCarouselCard: {
     backgroundColor: Colors.surface,
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 16,
-    marginBottom: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    width: 140,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
   },
-  medicationLeft: {
+  medicationCarouselHeader: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    flex: 1,
+    marginBottom: 12,
   },
-  medicationIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  medicationInfo: {
-    flex: 1,
-  },
-  medicationName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-    marginBottom: 2,
-  },
-  medicationType: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    marginBottom: 2,
-  },
-  medicationDosage: {
-    fontSize: 12,
-    color: Colors.textTertiary,
-    marginBottom: 2,
-  },
-  nextDose: {
-    fontSize: 11,
-    color: Colors.warning,
-    fontWeight: '600',
-  },
-  medicationStatus: {
+  medicationCarouselIcon: {
     width: 32,
     height: 32,
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  medicationCarouselStatus: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  medicationCarouselName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    marginBottom: 4,
+  },
+  medicationCarouselDosage: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginBottom: 2,
+  },
+  medicationCarouselTime: {
+    fontSize: 12,
+    color: Colors.accent,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  medicationCarouselNext: {
+    fontSize: 10,
+    color: Colors.warning,
+    fontWeight: '600',
+  },
+  recommendationCarouselCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
+    padding: 16,
+    width: 160,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  recommendationCarouselHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  recommendationCarouselIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  recommendationCarouselBadge: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: `${Colors.success}${Colors.opacity.light}`,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  recommendationCarouselCategory: {
+    fontSize: 10,
+    color: Colors.textSecondary,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  recommendationCarouselTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    marginBottom: 12,
+    lineHeight: 16,
+  },
+  recommendationCarouselProgress: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  recommendationCarouselProgressBar: {
+    flex: 1,
+    height: 4,
+    backgroundColor: `${Colors.textSecondary}${Colors.opacity.light}`,
+    borderRadius: 2,
+  },
+  recommendationCarouselProgressFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+  recommendationCarouselProgressText: {
+    fontSize: 10,
+    color: Colors.textSecondary,
+    fontWeight: '600',
   },
   metricsGrid: {
     flexDirection: 'row',
@@ -879,7 +985,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: Colors.accent,
+    backgroundColor: Colors.primary,
     borderRadius: 12,
     paddingVertical: 8,
   },
@@ -887,97 +993,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.surface,
     fontWeight: '600',
-  },
-  recommendationCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  recommendationLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  recommendationIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  recommendationInfo: {
-    flex: 1,
-  },
-  recommendationHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
-  },
-  recommendationCategory: {
-    fontSize: 10,
-    color: Colors.textSecondary,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-  },
-  completedBadge: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: `${Colors.success}${Colors.opacity.light}`,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  recommendationTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-    marginBottom: 4,
-  },
-  recommendationDescription: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    lineHeight: 16,
-    marginBottom: 8,
-  },
-  recommendationProgress: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  recommendationProgressBar: {
-    flex: 1,
-    height: 4,
-    backgroundColor: `${Colors.textSecondary}${Colors.opacity.light}`,
-    borderRadius: 2,
-  },
-  recommendationProgressFill: {
-    height: '100%',
-    borderRadius: 2,
-  },
-  recommendationProgressText: {
-    fontSize: 10,
-    color: Colors.textSecondary,
-    fontWeight: '600',
-  },
-  recommendationAction: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  recommendationCompleted: {
-    backgroundColor: `${Colors.success}${Colors.opacity.light}`,
   },
   quickActionsGrid: {
     flexDirection: 'row',

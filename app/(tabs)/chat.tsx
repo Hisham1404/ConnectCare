@@ -9,7 +9,7 @@ import {
   Platform,
   TextInput,
 } from 'react-native';
-import { Mic, Bot, MicOff, Volume2, VolumeX, Heart, Headphones, Type, X } from 'lucide-react-native';
+import { Mic, Bot, MicOff, Volume2, VolumeX, Heart, Headphones, Type, X, Play } from 'lucide-react-native';
 import { Colors } from '../../constants/Colors';
 
 const { width, height } = Dimensions.get('window');
@@ -32,6 +32,7 @@ export default function DailyCheckinScreen() {
   const [textInput, setTextInput] = useState('');
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
   
   const recordingTimer = useRef<NodeJS.Timeout>();
   const pulseAnimation = useRef(new Animated.Value(1)).current;
@@ -139,13 +140,17 @@ export default function DailyCheckinScreen() {
     }
   }, [isProcessing]);
 
+  const handleStartCheckin = () => {
+    setHasStarted(true);
+    setIsVoiceMode(true);
+  };
+
   const handleVoiceRecording = () => {
     if (Platform.OS === 'web') {
       console.log('Voice recording placeholder - would work on mobile devices');
     }
     
     if (!isRecording) {
-      setIsVoiceMode(true);
       setIsRecording(true);
       setRecordingDuration(0);
       
@@ -162,9 +167,12 @@ export default function DailyCheckinScreen() {
       
       setTimeout(() => {
         setIsProcessing(false);
-        setIsVoiceMode(false);
         if (currentQuestion < questions.length - 1) {
           setCurrentQuestion(prev => prev + 1);
+        } else {
+          setIsVoiceMode(false);
+          setHasStarted(false);
+          setCurrentQuestion(0);
         }
         setRecordingDuration(0);
       }, 2000);
@@ -181,6 +189,9 @@ export default function DailyCheckinScreen() {
         setIsProcessing(false);
         if (currentQuestion < questions.length - 1) {
           setCurrentQuestion(prev => prev + 1);
+        } else {
+          setHasStarted(false);
+          setCurrentQuestion(0);
         }
       }, 1500);
     }
@@ -200,11 +211,13 @@ export default function DailyCheckinScreen() {
     setTextInput('');
     setRecordingDuration(0);
     setIsVoiceMode(false);
+    setHasStarted(false);
   };
 
   const exitVoiceMode = () => {
     setIsVoiceMode(false);
     setIsRecording(false);
+    setHasStarted(false);
     if (recordingTimer.current) {
       clearInterval(recordingTimer.current);
     }
@@ -330,7 +343,97 @@ export default function DailyCheckinScreen() {
     );
   }
 
-  // Normal Interface
+  // Initial Start Check-in Interface
+  if (!hasStarted) {
+    return (
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <View style={styles.aiHeaderAvatar}>
+              <Bot color={Colors.accent} size={20} />
+            </View>
+            <View>
+              <Text style={styles.headerTitle}>Daily Check-in</Text>
+              <Text style={styles.headerSubtitle}>Voice-first health monitoring</Text>
+            </View>
+          </View>
+          
+          <TouchableOpacity 
+            style={styles.speakerButton}
+            onPress={() => setIsSpeakerOn(!isSpeakerOn)}
+          >
+            {isSpeakerOn ? (
+              <Volume2 color={Colors.accent} size={20} />
+            ) : (
+              <VolumeX color={Colors.textSecondary} size={20} />
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* Main Content - Start Check-in */}
+        <View style={styles.startCheckinContainer}>
+          <View style={styles.startCheckinContent}>
+            <Text style={styles.startCheckinTitle}>Ready for your daily check-in?</Text>
+            <Text style={styles.startCheckinSubtitle}>
+              I'll ask you a few questions about how you're feeling today. This usually takes about 2-3 minutes.
+            </Text>
+            
+            {/* Large Start Button */}
+            <TouchableOpacity
+              style={styles.startCheckinButton}
+              onPress={handleStartCheckin}
+              activeOpacity={0.8}
+            >
+              <Animated.View style={[
+                styles.startButtonInner,
+                { 
+                  transform: [
+                    { scale: breathingAnimation }
+                  ] 
+                }
+              ]}>
+                <Play color={Colors.surface} size={40} />
+              </Animated.View>
+              <Text style={styles.startButtonText}>Start Check-in</Text>
+            </TouchableOpacity>
+
+            {/* Features List */}
+            <View style={styles.featuresList}>
+              <View style={styles.featureItem}>
+                <Mic color={Colors.accent} size={16} />
+                <Text style={styles.featureText}>Voice-powered responses</Text>
+              </View>
+              <View style={styles.featureItem}>
+                <Heart color={Colors.heartRate} size={16} />
+                <Text style={styles.featureText}>Health insights & analysis</Text>
+              </View>
+              <View style={styles.featureItem}>
+                <Bot color={Colors.success} size={16} />
+                <Text style={styles.featureText}>AI-powered recommendations</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Alternative Options */}
+          <View style={styles.alternativeOptions}>
+            <TouchableOpacity
+              style={styles.alternativeButton}
+              onPress={() => {
+                setHasStarted(true);
+                setShowTextInput(true);
+              }}
+            >
+              <Type color={Colors.textSecondary} size={20} />
+              <Text style={styles.alternativeButtonText}>Use Text Instead</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  // Normal Interface (when started but not in voice mode)
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -511,6 +614,99 @@ const styles = StyleSheet.create({
     backgroundColor: `${Colors.textSecondary}${Colors.opacity.light}`,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  startCheckinContainer: {
+    flex: 1,
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    paddingVertical: 40,
+  },
+  startCheckinContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  startCheckinTitle: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: Colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: 16,
+    lineHeight: 36,
+  },
+  startCheckinSubtitle: {
+    fontSize: 16,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 48,
+    paddingHorizontal: 20,
+  },
+  startCheckinButton: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  startButtonInner: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.4,
+    shadowRadius: 24,
+    elevation: 16,
+    marginBottom: 16,
+  },
+  startButtonText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.primary,
+  },
+  featuresList: {
+    gap: 16,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  featureText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    fontWeight: '500',
+  },
+  alternativeOptions: {
+    alignItems: 'center',
+  },
+  alternativeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  alternativeButtonText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    fontWeight: '600',
   },
   mainContent: {
     flex: 1,

@@ -9,6 +9,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { Heart, Activity, Thermometer, Droplets, Weight, Ruler, TrendingUp, TrendingDown, Calendar, Clock, Plus, ChartBar as BarChart3, ChartLine as LineChart, Target, Award, Zap } from 'lucide-react-native';
+import { Colors } from '../../constants/Colors';
 
 const { width } = Dimensions.get('window');
 
@@ -16,7 +17,12 @@ export default function HealthScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState('week');
 
-  const periods = ['day', 'week', 'month', '3months'];
+  const periods = [
+    { key: 'day', label: 'Day' },
+    { key: 'week', label: 'Week' },
+    { key: 'month', label: 'Month' },
+    { key: '3months', label: '3 Months' },
+  ];
 
   const healthMetrics = [
     {
@@ -25,7 +31,7 @@ export default function HealthScreen() {
       value: '72',
       unit: 'BPM',
       icon: Heart,
-      color: '#ef4444',
+      color: Colors.heartRate,
       trend: 'stable',
       change: '+2%',
       normal: '60-100',
@@ -38,7 +44,7 @@ export default function HealthScreen() {
       value: '120/80',
       unit: 'mmHg',
       icon: Activity,
-      color: '#3b82f6',
+      color: Colors.bloodPressure,
       trend: 'improving',
       change: '-5%',
       normal: '120/80',
@@ -51,7 +57,7 @@ export default function HealthScreen() {
       value: '98.6',
       unit: '°F',
       icon: Thermometer,
-      color: '#f59e0b',
+      color: Colors.temperature,
       trend: 'stable',
       change: '0%',
       normal: '98.6',
@@ -64,7 +70,7 @@ export default function HealthScreen() {
       value: '98',
       unit: '%',
       icon: Droplets,
-      color: '#10b981',
+      color: Colors.oxygen,
       trend: 'stable',
       change: '+1%',
       normal: '95-100',
@@ -77,7 +83,7 @@ export default function HealthScreen() {
       value: '78.5',
       unit: 'kg',
       icon: Weight,
-      color: '#8b5cf6',
+      color: Colors.accent,
       trend: 'declining',
       change: '-2%',
       normal: '75-80',
@@ -90,7 +96,7 @@ export default function HealthScreen() {
       value: '3',
       unit: '/10',
       icon: Zap,
-      color: '#f97316',
+      color: Colors.warning,
       trend: 'improving',
       change: '-40%',
       normal: '0-2',
@@ -108,7 +114,7 @@ export default function HealthScreen() {
       unit: 'steps',
       progress: 85,
       icon: Target,
-      color: '#3b82f6',
+      color: Colors.accent,
     },
     {
       id: '2',
@@ -118,7 +124,7 @@ export default function HealthScreen() {
       unit: 'glasses',
       progress: 75,
       icon: Droplets,
-      color: '#06b6d4',
+      color: Colors.oxygen,
     },
     {
       id: '3',
@@ -128,7 +134,7 @@ export default function HealthScreen() {
       unit: 'hours',
       progress: 94,
       icon: Clock,
-      color: '#8b5cf6',
+      color: Colors.accent,
     },
     {
       id: '4',
@@ -138,7 +144,7 @@ export default function HealthScreen() {
       unit: 'minutes',
       progress: 83,
       icon: Activity,
-      color: '#10b981',
+      color: Colors.success,
     },
   ];
 
@@ -189,19 +195,19 @@ export default function HealthScreen() {
 
   const getTrendColor = (trend: string) => {
     switch (trend) {
-      case 'improving': return '#10b981';
-      case 'declining': return '#ef4444';
-      case 'stable': return '#6b7280';
-      default: return '#6b7280';
+      case 'improving': return Colors.success;
+      case 'declining': return Colors.error;
+      case 'stable': return Colors.textSecondary;
+      default: return Colors.textSecondary;
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'normal': return '#10b981';
-      case 'warning': return '#f59e0b';
-      case 'critical': return '#ef4444';
-      default: return '#6b7280';
+      case 'normal': return Colors.success;
+      case 'warning': return Colors.warning;
+      case 'critical': return Colors.error;
+      default: return Colors.textSecondary;
     }
   };
 
@@ -213,7 +219,7 @@ export default function HealthScreen() {
     return (
       <View style={styles.miniChart}>
         {readings.map((value, index) => {
-          const height = ((value - minValue) / range) * 30 + 5;
+          const height = ((value - minValue) / range) * 40 + 8;
           return (
             <View
               key={index}
@@ -242,38 +248,35 @@ export default function HealthScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>Health Tracking</Text>
         <TouchableOpacity style={styles.addButton}>
-          <Plus color="#3b82f6" size={20} />
+          <Plus color={Colors.accent} size={20} />
         </TouchableOpacity>
       </View>
 
-      {/* Period Selector */}
-      <View style={styles.periodSelector}>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.periodContent}
-        >
+      {/* Enhanced Period Selector - Segmented Control */}
+      <View style={styles.periodSelectorContainer}>
+        <Text style={styles.periodSelectorTitle}>Time Period</Text>
+        <View style={styles.segmentedControl}>
           {periods.map((period) => (
             <TouchableOpacity
-              key={period}
+              key={period.key}
               style={[
-                styles.periodButton,
-                selectedPeriod === period && styles.activePeriodButton
+                styles.segmentButton,
+                selectedPeriod === period.key && styles.activeSegmentButton
               ]}
-              onPress={() => setSelectedPeriod(period)}
+              onPress={() => setSelectedPeriod(period.key)}
             >
               <Text style={[
-                styles.periodText,
-                selectedPeriod === period && styles.activePeriodText
+                styles.segmentText,
+                selectedPeriod === period.key && styles.activeSegmentText
               ]}>
-                {period === '3months' ? '3 Months' : period.charAt(0).toUpperCase() + period.slice(1)}
+                {period.label}
               </Text>
             </TouchableOpacity>
           ))}
-        </ScrollView>
+        </View>
       </View>
 
-      {/* Health Metrics Grid */}
+      {/* Enhanced Health Metrics Grid */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Health Metrics</Text>
         
@@ -283,27 +286,30 @@ export default function HealthScreen() {
             const trendColor = getTrendColor(metric.trend);
             
             return (
-              <TouchableOpacity key={metric.id} style={styles.metricCard}>
-                <View style={styles.metricHeader}>
-                  <View style={[styles.metricIcon, { backgroundColor: `${metric.color}15` }]}>
-                    <metric.icon color={metric.color} size={18} />
+              <TouchableOpacity key={metric.id} style={styles.enhancedMetricCard}>
+                <View style={styles.metricCardHeader}>
+                  <View style={[styles.metricIcon, { backgroundColor: `${metric.color}${Colors.opacity.light}` }]}>
+                    <metric.icon color={metric.color} size={24} />
                   </View>
                   <View style={styles.metricTrend}>
-                    <TrendIcon color={trendColor} size={14} />
+                    <TrendIcon color={trendColor} size={16} />
                     <Text style={[styles.metricChange, { color: trendColor }]}>
                       {metric.change}
                     </Text>
                   </View>
                 </View>
                 
-                <Text style={styles.metricValue}>
+                <Text style={styles.enhancedMetricValue}>
                   {metric.value}
-                  <Text style={styles.metricUnit}> {metric.unit}</Text>
+                  <Text style={styles.enhancedMetricUnit}> {metric.unit}</Text>
                 </Text>
                 <Text style={styles.metricLabel}>{metric.label}</Text>
                 <Text style={styles.metricNormal}>Normal: {metric.normal}</Text>
                 
-                {renderMiniChart(metric.readings, metric.color)}
+                {/* Enhanced Mini Chart */}
+                <View style={styles.enhancedChartContainer}>
+                  {renderMiniChart(metric.readings, metric.color)}
+                </View>
                 
                 <Text style={styles.metricLastReading}>{metric.lastReading}</Text>
               </TouchableOpacity>
@@ -325,8 +331,8 @@ export default function HealthScreen() {
           {healthGoals.map((goal) => (
             <View key={goal.id} style={styles.goalCard}>
               <View style={styles.goalHeader}>
-                <View style={[styles.goalIcon, { backgroundColor: `${goal.color}15` }]}>
-                  <goal.icon color={goal.color} size={16} />
+                <View style={[styles.goalIcon, { backgroundColor: `${goal.color}${Colors.opacity.light}` }]}>
+                  <goal.icon color={goal.color} size={18} />
                 </View>
                 <Text style={styles.goalProgress}>{goal.progress}%</Text>
               </View>
@@ -357,7 +363,7 @@ export default function HealthScreen() {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Recent Readings</Text>
           <TouchableOpacity>
-            <LineChart color="#3b82f6" size={20} />
+            <LineChart color={Colors.accent} size={20} />
           </TouchableOpacity>
         </View>
         
@@ -371,7 +377,7 @@ export default function HealthScreen() {
             
             <View style={[
               styles.readingStatus,
-              { backgroundColor: `${getStatusColor(reading.status)}15` }
+              { backgroundColor: `${getStatusColor(reading.status)}${Colors.opacity.light}` }
             ]}>
               <Text style={[
                 styles.readingStatusText,
@@ -390,29 +396,29 @@ export default function HealthScreen() {
         
         <View style={styles.quickActionsGrid}>
           <TouchableOpacity style={styles.quickActionCard}>
-            <View style={[styles.quickActionIcon, { backgroundColor: '#ef444415' }]}>
-              <Heart color="#ef4444" size={20} />
+            <View style={[styles.quickActionIcon, { backgroundColor: `${Colors.heartRate}${Colors.opacity.light}` }]}>
+              <Heart color={Colors.heartRate} size={20} />
             </View>
             <Text style={styles.quickActionTitle}>Log Vitals</Text>
           </TouchableOpacity>
           
           <TouchableOpacity style={styles.quickActionCard}>
-            <View style={[styles.quickActionIcon, { backgroundColor: '#3b82f615' }]}>
-              <Activity color="#3b82f6" size={20} />
+            <View style={[styles.quickActionIcon, { backgroundColor: `${Colors.accent}${Colors.opacity.light}` }]}>
+              <Activity color={Colors.accent} size={20} />
             </View>
             <Text style={styles.quickActionTitle}>Record Exercise</Text>
           </TouchableOpacity>
           
           <TouchableOpacity style={styles.quickActionCard}>
-            <View style={[styles.quickActionIcon, { backgroundColor: '#10b98115' }]}>
-              <Award color="#10b981" size={20} />
+            <View style={[styles.quickActionIcon, { backgroundColor: `${Colors.success}${Colors.opacity.light}` }]}>
+              <Award color={Colors.success} size={20} />
             </View>
             <Text style={styles.quickActionTitle}>View Trends</Text>
           </TouchableOpacity>
           
           <TouchableOpacity style={styles.quickActionCard}>
-            <View style={[styles.quickActionIcon, { backgroundColor: '#f59e0b15' }]}>
-              <Calendar color="#f59e0b" size={20} />
+            <View style={[styles.quickActionIcon, { backgroundColor: `${Colors.warning}${Colors.opacity.light}` }]}>
+              <Calendar color={Colors.warning} size={20} />
             </View>
             <Text style={styles.quickActionTitle}>Set Reminders</Text>
           </TouchableOpacity>
@@ -425,7 +431,7 @@ export default function HealthScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: Colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -434,47 +440,62 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 20,
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.surface,
   },
   title: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#1f2937',
+    color: Colors.textPrimary,
   },
   addButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#eff6ff',
+    backgroundColor: `${Colors.accent}${Colors.opacity.light}`,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  periodSelector: {
-    backgroundColor: '#ffffff',
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  periodContent: {
+  periodSelectorContainer: {
+    backgroundColor: Colors.surface,
     paddingHorizontal: 20,
-    gap: 8,
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: `${Colors.textSecondary}${Colors.opacity.light}`,
   },
-  periodButton: {
-    backgroundColor: '#f3f4f6',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+  periodSelectorTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+    marginBottom: 12,
   },
-  activePeriodButton: {
-    backgroundColor: '#3b82f6',
+  segmentedControl: {
+    flexDirection: 'row',
+    backgroundColor: Colors.background,
+    borderRadius: 12,
+    padding: 4,
   },
-  periodText: {
+  segmentButton: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  activeSegmentButton: {
+    backgroundColor: Colors.primary,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  segmentText: {
     fontSize: 14,
-    color: '#6b7280',
-    fontWeight: '500',
+    fontWeight: '600',
+    color: Colors.textSecondary,
   },
-  activePeriodText: {
-    color: '#ffffff',
+  activeSegmentText: {
+    color: Colors.surface,
   },
   section: {
     paddingHorizontal: 20,
@@ -489,87 +510,93 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1f2937',
+    color: Colors.textPrimary,
     marginBottom: 16,
   },
   seeAll: {
     fontSize: 14,
-    color: '#3b82f6',
+    color: Colors.accent,
     fontWeight: '600',
   },
   metricsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 16,
   },
-  metricCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 16,
-    width: (width - 52) / 2,
+  enhancedMetricCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 20,
+    padding: 20,
+    width: (width - 56) / 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
-  metricHeader: {
+  metricCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   metricIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
   metricTrend: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: 4,
   },
   metricChange: {
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  metricValue: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#1f2937',
-    marginBottom: 4,
-  },
-  metricUnit: {
     fontSize: 12,
-    fontWeight: '500',
-    color: '#6b7280',
+    fontWeight: '700',
+  },
+  enhancedMetricValue: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: Colors.textPrimary,
+    marginBottom: 6,
+  },
+  enhancedMetricUnit: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.textSecondary,
   },
   metricLabel: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: 14,
+    color: Colors.textSecondary,
+    fontWeight: '600',
     marginBottom: 4,
   },
   metricNormal: {
-    fontSize: 10,
-    color: '#9ca3af',
-    marginBottom: 8,
+    fontSize: 11,
+    color: Colors.textTertiary,
+    marginBottom: 12,
+  },
+  enhancedChartContainer: {
+    marginBottom: 12,
   },
   miniChart: {
     flexDirection: 'row',
     alignItems: 'end',
-    height: 35,
-    gap: 1,
-    marginBottom: 8,
+    height: 48,
+    gap: 2,
+    justifyContent: 'space-between',
   },
   chartBar: {
     flex: 1,
-    borderRadius: 1,
+    borderRadius: 2,
+    minHeight: 8,
   },
   metricLastReading: {
-    fontSize: 10,
-    color: '#9ca3af',
+    fontSize: 11,
+    color: Colors.textTertiary,
+    fontWeight: '500',
   },
   goalsGrid: {
     flexDirection: 'row',
@@ -577,7 +604,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   goalCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.surface,
     borderRadius: 16,
     padding: 16,
     width: (width - 52) / 2,
@@ -594,31 +621,31 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   goalIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
   goalProgress: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#3b82f6',
+    color: Colors.accent,
   },
   goalTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1f2937',
+    color: Colors.textPrimary,
     marginBottom: 4,
   },
   goalValue: {
     fontSize: 12,
-    color: '#6b7280',
+    color: Colors.textSecondary,
     marginBottom: 8,
   },
   goalProgressBar: {
     height: 4,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: `${Colors.textSecondary}${Colors.opacity.light}`,
     borderRadius: 2,
   },
   goalProgressFill: {
@@ -626,7 +653,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   readingCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.surface,
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
@@ -645,18 +672,18 @@ const styles = StyleSheet.create({
   readingType: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1f2937',
+    color: Colors.textPrimary,
     marginBottom: 2,
   },
   readingValue: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#3b82f6',
+    color: Colors.accent,
     marginBottom: 2,
   },
   readingTime: {
     fontSize: 12,
-    color: '#6b7280',
+    color: Colors.textSecondary,
   },
   readingStatus: {
     paddingHorizontal: 8,
@@ -673,7 +700,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   quickActionCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.surface,
     borderRadius: 16,
     padding: 16,
     width: (width - 52) / 2,
@@ -695,7 +722,7 @@ const styles = StyleSheet.create({
   quickActionTitle: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#1f2937',
+    color: Colors.textPrimary,
     textAlign: 'center',
   },
 });
