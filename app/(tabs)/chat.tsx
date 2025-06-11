@@ -247,6 +247,7 @@ export default function DailyCheckinScreen() {
       }
     }
   };
+
   const handleTextSubmit = () => {
     if (textInput.trim()) {
       setIsProcessing(true);
@@ -962,4 +963,86 @@ const styles = StyleSheet.create({
   },
   exitButton: {
     position: 'absolute',
-    top: 
+    top: 60,
+    right: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1001,
+  },
+  voiceModeContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+    width: '100%',
+  },
+  voiceRipple: {
+    position: 'absolute',
+    borderRadius: 1000,
+    borderWidth: 2,
+    borderColor: 'rgba(59, 130, 246, 0.3)',
+  },
+  voiceOrb: {
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  voiceOrbButton: {
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(59, 130, 246, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#3b82f6',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 24,
+    elevation: 16,
+  },
+  voiceStatusContainer: {
+    alignItems: 'center',
+    marginBottom: 60,
+  },
+  voiceStatusText: {
+    fontSize: 18,
+    color: '#ffffff',
+    textAlign: 'center',
+    fontWeight: '500',
+    marginBottom: 20,
+  },
+  voiceWaveform: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    height: 40,
+  },
+  voiceWaveBar: {
+    width: 6,
+    backgroundColor: 'rgba(255,255,255,0.8)',
+    borderRadius: 3,
+  },
+  voiceQuestionContainer: {
+    position: 'absolute',
+    bottom: 100,
+    left: 24,
+    right: 24,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 20,
+    padding: 24,
+    backdropFilter: 'blur(10px)',
+  },
+  voiceQuestionText: {
+    fontSize: 16,
+    color: '#ffffff',
+    textAlign: 'center',
+    lineHeight: 24,
+    fontWeight: '500',
+  },
+});
