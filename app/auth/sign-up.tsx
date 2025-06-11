@@ -19,7 +19,8 @@ import FeedbackButton from '../../components/ui/FeedbackButton';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 
 export default function SignUpScreen() {
-  const { role } = useLocalSearchParams<{ role: 'doctor' | 'patient' }>();
+  const params = useLocalSearchParams();
+  const role = params.role as 'doctor' | 'patient' || 'patient';
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);

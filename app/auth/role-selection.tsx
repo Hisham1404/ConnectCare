@@ -52,10 +52,8 @@ export default function RoleSelectionScreen() {
 
   const handleContinue = () => {
     if (selectedRole) {
-      router.push({
-        pathname: '/auth/sign-up',
-        params: { role: selectedRole },
-      });
+      // Navigate to sign-up with the selected role
+      router.push(`/auth/sign-up?role=${selectedRole}`);
     }
   };
 
@@ -85,12 +83,16 @@ export default function RoleSelectionScreen() {
         {roles.map((role) => (
           <FeedbackButton
             key={role.id}
-            onPress={() => setSelectedRole(role.id)}
+            onPress={() => {
+              console.log('Role selected:', role.id);
+              setSelectedRole(role.id);
+            }}
             style={[
               styles.roleCard,
               selectedRole === role.id && styles.selectedRoleCard,
             ]}
             scaleEffect={true}
+            hapticFeedback={true}
           >
             <View style={styles.roleCardHeader}>
               <View style={[
@@ -159,7 +161,10 @@ export default function RoleSelectionScreen() {
             styles.continueButton,
             selectedRole && styles.continueButtonActive,
           ]}
-          onPress={handleContinue}
+          onPress={() => {
+            console.log('Continue pressed with role:', selectedRole);
+            handleContinue();
+          }}
           disabled={!selectedRole}
         >
           <Text style={[

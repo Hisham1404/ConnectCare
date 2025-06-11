@@ -81,7 +81,10 @@ export default function AuthWelcomeScreen() {
       <View style={styles.actionSection}>
         <TouchableOpacity 
           style={styles.primaryButton}
-          onPress={() => router.push('/auth/role-selection')}
+          onPress={() => {
+            console.log('Get Started pressed');
+            router.push('/auth/role-selection');
+          }}
         >
           <Text style={styles.primaryButtonText}>Get Started</Text>
           <ArrowRight color={Colors.surface} size={20} />
@@ -89,7 +92,10 @@ export default function AuthWelcomeScreen() {
 
         <TouchableOpacity 
           style={styles.secondaryButton}
-          onPress={() => router.push('/auth/sign-in')}
+          onPress={() => {
+            console.log('Sign In pressed');
+            router.push('/auth/sign-in');
+          }}
         >
           <Text style={styles.secondaryButtonText}>Already have an account? Sign In</Text>
         </TouchableOpacity>
