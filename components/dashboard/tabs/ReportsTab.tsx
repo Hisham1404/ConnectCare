@@ -44,7 +44,6 @@ export default function ReportsTab({ refreshing, onRefresh }: ReportsTabProps) {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       showsVerticalScrollIndicator={false}
     >
-      {/* Generate Report Section */}
       <View style={styles.generateSection}>
         <Text style={styles.sectionTitle}>Generate Clinical Report</Text>
         <Text style={styles.sectionDescription}>
@@ -52,7 +51,6 @@ export default function ReportsTab({ refreshing, onRefresh }: ReportsTabProps) {
           The transcript will be formatted and displayed for clinical review.
         </Text>
 
-        {/* Conversation Summary */}
         {transcript.length > 0 && (
           <View style={styles.conversationSummary}>
             <View style={styles.summaryHeader}>
@@ -99,12 +97,12 @@ export default function ReportsTab({ refreshing, onRefresh }: ReportsTabProps) {
           {isLoading ? (
             <ActivityIndicator color="#ffffff" size="small" />
           ) : (
-            <>
+            <View style={styles.generateButtonContent}>
               <FileText color="#ffffff" size={20} />
               <Text style={styles.generateButtonText}>
                 Generate Report from Last Conversation
               </Text>
-            </>
+            </View>
           )}
         </TouchableOpacity>
 
@@ -119,7 +117,6 @@ export default function ReportsTab({ refreshing, onRefresh }: ReportsTabProps) {
         )}
       </View>
 
-      {/* Generated Report Display */}
       {report && (
         <View style={styles.reportContainer}>
           <View style={styles.reportHeader}>
@@ -165,7 +162,6 @@ export default function ReportsTab({ refreshing, onRefresh }: ReportsTabProps) {
         </View>
       )}
 
-      {/* Other Report Options */}
       <View style={styles.otherReportsSection}>
         <Text style={styles.sectionTitle}>Other Reports & Analytics</Text>
         
@@ -263,10 +259,6 @@ const styles = StyleSheet.create({
   },
   generateButton: {
     backgroundColor: '#3b82f6',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
     paddingVertical: 14,
     paddingHorizontal: 20,
     borderRadius: 12,
@@ -281,6 +273,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#9ca3af',
     shadowOpacity: 0,
     elevation: 0,
+  },
+  generateButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
   generateButtonText: {
     color: '#ffffff',
