@@ -87,6 +87,26 @@ export default function WelcomeScreen() {
   return (
     <View style={styles.container}>
       <StatusBar style="dark" />
+      
+      {/* Bolt.new Badge */}
+      <View style={styles.boltBadgeContainer}>
+        <TouchableOpacity 
+          style={styles.boltBadgeButton}
+          onPress={() => {
+            // Open Bolt.new in a new tab/window
+            if (typeof window !== 'undefined') {
+              window.open('https://bolt.new/', '_blank');
+            }
+          }}
+        >
+          <Image 
+            source={{ uri: 'https://storage.bolt.army/black_circle_360x360.png' }}
+            style={styles.boltBadgeImage}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
+      </View>
+
       <ScrollView 
         contentContainerStyle={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
@@ -277,6 +297,24 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.surface,
+  },
+  boltBadgeContainer: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    zIndex: 50,
+  },
+  boltBadgeButton: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  boltBadgeImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
   },
   scrollContainer: {
     flexGrow: 1,
