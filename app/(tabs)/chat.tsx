@@ -9,6 +9,7 @@ import {
   Platform,
   TextInput,
 } from 'react-native';
+import { Audio } from 'expo-av';
 import { Mic, Bot, MicOff, Volume2, VolumeX, Heart, Type, X, Play, CircleCheck as CheckCircle, Clock, MessageCircle } from 'lucide-react-native';
 import { Colors } from '../../constants/Colors';
 import FeedbackButton from '../../components/ui/FeedbackButton';
@@ -35,6 +36,9 @@ export default function DailyCheckinScreen() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const [sound, setSound] = useState<Audio.Sound | null>(null);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   
   const recordingTimer = useRef<NodeJS.Timeout>();
   const pulseAnimation = useRef(new Animated.Value(1)).current;
@@ -68,6 +72,19 @@ export default function DailyCheckinScreen() {
         }),
       ])
     ).start();
+
+    // Configure audio session
+    configureAudio();
+
+    return () => {
+      // Cleanup audio resources
+      if (recording) {
+        recording.stopAndUnloadAsync();
+      }
+      if (sound) {
+        sound.unloadAsync();
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -144,6 +161,125 @@ export default function DailyCheckinScreen() {
   const handleStartCheckin = () => {
     setHasStarted(true);
     setIsVoiceMode(true);
+  };
+
+  const configureAudio = async () => {
+    try {
+      await Audio.requestPermissionsAsync();
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+    } catch (error) {
+      console.error('Failed to configure audio:', error);
+    }
+  };
+
+  const startRecording = async () => {
+    try {
+      if (Platform.OS === 'web') {
+        console.log('Web recording not supported in this demo');
+        return null;
+      }
+
+      const { recording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      setRecording(recording);
+      return recording;
+    } catch (error) {
+      console.error('Failed to start recording:', error);
+      return null;
+    }
+  };
+
+  const stopRecording = async () => {
+    try {
+      if (!recording) return null;
+
+      setRecording(null);
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
+      return uri;
+    } catch (error) {
+      console.error('Failed to stop recording:', error);
+      return null;
+    }
+  };
+
+  const playAudioFromBase64 = async (base64Audio: string) => {
+    try {
+      setIsPlayingAudio(true);
+      
+      // Create audio URI from base64
+      const audioUri = `data:audio/mpeg;base64,${base64Audio}`;
+      
+      // Unload previous sound if exists
+      if (sound) {
+        await sound.unloadAsync();
+      }
+
+      const { sound: newSound } = await Audio.Sound.createAsync(
+        { uri: audioUri },
+        { shouldPlay: true }
+      );
+      
+      setSound(newSound);
+      
+      // Set up playback status update
+      newSound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded && status.didJustFinish) {
+          setIsPlayingAudio(false);
+        }
+      });
+      
+    } catch (error) {
+      console.error('Failed to play audio:', error);
+      setIsPlayingAudio(false);
+    }
+  };
+
+  const generateAIResponse = async (userInput: string): Promise<string> => {
+    // Simulate AI processing with contextual responses based on current question
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    const responses = [
+      "Thank you for sharing how you're feeling. That's helpful information for your recovery.",
+      "I understand your pain level. Let's make sure your doctor is aware of this.",
+      "It's great that you're staying on top of your medications. Consistency is key for recovery.",
+      "Sleep quality is very important for healing. I'll note this in your record.",
+      "Thank you for reporting your symptoms. This helps us monitor your progress effectively."
+    ];
+    
+    return responses[currentQuestion] || "Thank you for your response. Your healthcare team will review this information.";
+  };
+
+  const handleTextToSpeech = async (text: string) => {
+    try {
+      const response = await fetch('/api/elevenlabs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'text-to-speech',
+          text: text,
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (data.error) {
+        console.error('TTS Error:', data.error);
+        return;
+      }
+
+      if (data.audioData) {
+        await playAudioFromBase64(data.audioData);
+      }
+    } catch (error) {
+      console.error('Failed to convert text to speech:', error);
+    }
   };
 
   const handleVoiceRecording = () => {
