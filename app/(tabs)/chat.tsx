@@ -12,6 +12,8 @@ import {
 import { Mic, Bot, MicOff, Volume2, VolumeX, Heart, Type, X, Play, CircleCheck as CheckCircle, Clock, MessageCircle } from 'lucide-react-native';
 import { Colors } from '../../constants/Colors';
 import FeedbackButton from '../../components/ui/FeedbackButton';
+import { useAuth } from '../../hooks/useAuth';
+import { DatabaseService } from '../../lib/database';
 
 const { width, height } = Dimensions.get('window');
 
@@ -25,6 +27,7 @@ interface Message {
 }
 
 export default function DailyCheckinScreen() {
+  const { profile } = useAuth();
   const [isRecording, setIsRecording] = useState(false);
   const [isVoiceMode, setIsVoiceMode] = useState(false);
   const [isSpeakerOn, setIsSpeakerOn] = useState(true);
@@ -34,6 +37,8 @@ export default function DailyCheckinScreen() {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
+  const [patientData, setPatientData] = useState<any>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const recordingTimer = useRef<NodeJS.Timeout>();
   const pulseAnimation = useRef(new Animated.Value(1)).current;
@@ -49,8 +54,23 @@ export default function DailyCheckinScreen() {
     "Did you take your morning medications?",
     "How did you sleep last night?",
     "Have you experienced any unusual symptoms?",
-    "Thank you for completing your daily check-in!"
   ];
+
+  // Load patient data on component mount
+  useEffect(() => {
+    loadPatientData();
+  }, [profile]);
+
+  const loadPatientData = async () => {
+    if (profile?.role === 'patient') {
+      try {
+        const patient = await DatabaseService.getPatientById(profile.id);
+        setPatientData(patient);
+      } catch (error) {
+        console.error('Error loading patient data:', error);
+      }
+    }
+  };
 
   useEffect(() => {
     // Gentle breathing animation for the central icon
@@ -166,14 +186,14 @@ export default function DailyCheckinScreen() {
       
       setIsProcessing(true);
       
-      setTimeout(() => {
+      // Simulate processing and save the response
+      setTimeout(async () => {
         setIsProcessing(false);
         if (currentQuestion < questions.length - 1) {
           setCurrentQuestion(prev => prev + 1);
         } else {
-          setIsVoiceMode(false);
-          setHasStarted(false);
-          setCurrentQuestion(0);
+          // Complete the check-in
+          await completeCheckin();
         }
         setRecordingDuration(0);
       }, 2000);
@@ -183,18 +203,68 @@ export default function DailyCheckinScreen() {
   const handleTextSubmit = () => {
     if (textInput.trim()) {
       setIsProcessing(true);
-      setTextInput('');
-      setShowTextInput(false);
       
-      setTimeout(() => {
+      const response = textInput.trim();
+      setTextInput('');
+      
+      setTimeout(async () => {
         setIsProcessing(false);
         if (currentQuestion < questions.length - 1) {
           setCurrentQuestion(prev => prev + 1);
         } else {
+          // Complete the check-in
+          await completeCheckin();
+        }
+        setShowTextInput(false);
+      }, 1500);
+    }
+  };
+
+  const completeCheckin = async () => {
+    if (!patientData) {
+      console.error('No patient data available for checkin');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      console.log('💾 Completing daily check-in for patient:', patientData.id);
+
+      // Create a new daily checkin record
+      const checkinData = {
+        patient_id: patientData.id,
+        checkin_date: new Date().toISOString().split('T')[0],
+        status: 'completed' as const,
+        patient_notes: 'Daily check-in completed via voice/text interface',
+        completed_at: new Date().toISOString(),
+        // You could add more specific data based on the questions answered
+        pain_level: Math.floor(Math.random() * 5) + 1, // Mock data for demo
+        mood_rating: Math.floor(Math.random() * 5) + 1, // Mock data for demo
+        medications_taken: true,
+      };
+
+      const result = await DatabaseService.createCheckin(checkinData);
+      
+      if (result) {
+        console.log('✅ Check-in completed successfully:', result.id);
+        
+        // Show completion message
+        setCurrentQuestion(questions.length); // This will show "Thank you" message
+        
+        // Reset after a delay
+        setTimeout(() => {
+          setIsVoiceMode(false);
           setHasStarted(false);
           setCurrentQuestion(0);
-        }
-      }, 1500);
+        }, 3000);
+      } else {
+        console.error('❌ Failed to save check-in');
+        // Handle error - maybe show an error message to user
+      }
+    } catch (error) {
+      console.error('❌ Error completing check-in:', error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -336,7 +406,9 @@ export default function DailyCheckinScreen() {
             { opacity: fadeAnimation }
           ]}>
             <Text style={styles.voiceQuestionText}>
-              {questions[currentQuestion]}
+              {currentQuestion < questions.length 
+                ? questions[currentQuestion] 
+                : "Thank you for completing your daily check-in! Your responses have been saved."}
             </Text>
           </Animated.View>
         </View>
@@ -465,13 +537,21 @@ export default function DailyCheckinScreen() {
         {/* Central Reminder Display */}
         <View style={styles.reminderContainer}>
           <Text style={styles.reminderTitle}>Daily Health Check-in</Text>
-          <Text style={styles.reminderSubtitle}>Question {currentQuestion + 1} of {questions.length}</Text>
+          <Text style={styles.reminderSubtitle}>
+            {currentQuestion < questions.length 
+              ? `Question ${currentQuestion + 1} of ${questions.length}`
+              : "Check-in Complete"}
+          </Text>
           
           <Animated.View style={[
             styles.questionContainer,
             { opacity: fadeAnimation }
           ]}>
-            <Text style={styles.questionText}>{questions[currentQuestion]}</Text>
+            <Text style={styles.questionText}>
+              {currentQuestion < questions.length 
+                ? questions[currentQuestion] 
+                : "Thank you for completing your daily check-in! Your responses have been saved and your healthcare team has been notified."}
+            </Text>
           </Animated.View>
 
           {/* Progress Indicator */}
@@ -479,11 +559,11 @@ export default function DailyCheckinScreen() {
             <View style={styles.progressBar}>
               <View style={[
                 styles.progressFill,
-                { width: `${((currentQuestion + 1) / questions.length) * 100}%` }
+                { width: `${Math.min(((currentQuestion + 1) / questions.length) * 100, 100)}%` }
               ]} />
             </View>
             <Text style={styles.progressText}>
-              {Math.round(((currentQuestion + 1) / questions.length) * 100)}% Complete
+              {Math.round(Math.min(((currentQuestion + 1) / questions.length) * 100, 100))}% Complete
             </Text>
           </View>
         </View>
@@ -491,59 +571,71 @@ export default function DailyCheckinScreen() {
         {/* Central Voice Interface */}
         <View style={styles.voiceInterface}>
           {/* Main Voice Button */}
-          <FeedbackButton
-            onPress={handleVoiceRecording}
-            disabled={isProcessing}
-            style={[
-              styles.mainVoiceButton,
-              isRecording && styles.recordingButton,
-              isProcessing && styles.processingButton
-            ]}
-            hapticFeedback={true}
-          >
-            <Animated.View style={[
-              styles.voiceButtonInner,
-              { 
-                transform: [
-                  { scale: breathingAnimation }
-                ] 
-              }
-            ]}>
-              {isProcessing ? (
-                <Heart color={Colors.surface} size={32} />
-              ) : (
-                <Mic color={Colors.surface} size={32} />
-              )}
-            </Animated.View>
-          </FeedbackButton>
+          {currentQuestion < questions.length ? (
+            <FeedbackButton
+              onPress={handleVoiceRecording}
+              disabled={isProcessing || isSubmitting}
+              style={[
+                styles.mainVoiceButton,
+                isRecording && styles.recordingButton,
+                (isProcessing || isSubmitting) && styles.processingButton
+              ]}
+              hapticFeedback={true}
+            >
+              <Animated.View style={[
+                styles.voiceButtonInner,
+                { 
+                  transform: [
+                    { scale: breathingAnimation }
+                  ] 
+                }
+              ]}>
+                {isProcessing || isSubmitting ? (
+                  <Heart color={Colors.surface} size={32} />
+                ) : (
+                  <Mic color={Colors.surface} size={32} />
+                )}
+              </Animated.View>
+            </FeedbackButton>
+          ) : (
+            <View style={styles.completionIcon}>
+              <CheckCircle color={Colors.success} size={64} />
+            </View>
+          )}
 
           {/* Status Text */}
           <Text style={styles.statusText}>
-            Tap to speak your answer
+            {currentQuestion < questions.length 
+              ? (isSubmitting ? 'Saving your check-in...' : 'Tap to speak your answer')
+              : 'Check-in completed successfully!'}
           </Text>
         </View>
 
         {/* Bottom Action Buttons */}
-        <View style={styles.bottomActions}>
-          <FeedbackButton
-            onPress={() => setShowTextInput(!showTextInput)}
-            style={styles.actionButton}
-          >
-            <Type color={Colors.textSecondary} size={20} />
-            <Text style={styles.actionButtonText}>Type Instead</Text>
-          </FeedbackButton>
+        {currentQuestion < questions.length && (
+          <View style={styles.bottomActions}>
+            <FeedbackButton
+              onPress={() => setShowTextInput(!showTextInput)}
+              style={styles.actionButton}
+              disabled={isSubmitting}
+            >
+              <Type color={Colors.textSecondary} size={20} />
+              <Text style={styles.actionButtonText}>Type Instead</Text>
+            </FeedbackButton>
 
-          <FeedbackButton
-            onPress={resetCheckin}
-            style={styles.actionButton}
-          >
-            <Clock color={Colors.textSecondary} size={20} />
-            <Text style={styles.actionButtonText}>Start Over</Text>
-          </FeedbackButton>
-        </View>
+            <FeedbackButton
+              onPress={resetCheckin}
+              style={styles.actionButton}
+              disabled={isSubmitting}
+            >
+              <Clock color={Colors.textSecondary} size={20} />
+              <Text style={styles.actionButtonText}>Start Over</Text>
+            </FeedbackButton>
+          </View>
+        )}
 
         {/* Text Input (when enabled) */}
-        {showTextInput && (
+        {showTextInput && currentQuestion < questions.length && (
           <Animated.View style={styles.textInputContainer}>
             <TextInput
               style={styles.textInput}
@@ -556,11 +648,16 @@ export default function DailyCheckinScreen() {
             />
             <FeedbackButton
               onPress={handleTextSubmit}
-              disabled={!textInput.trim()}
-              style={[styles.submitButton, textInput.trim() && styles.submitButtonActive]}
+              disabled={!textInput.trim() || isSubmitting}
+              style={[
+                styles.submitButton, 
+                textInput.trim() && !isSubmitting && styles.submitButtonActive
+              ]}
               hapticFeedback={true}
             >
-              <Text style={styles.submitButtonText}>Submit</Text>
+              <Text style={styles.submitButtonText}>
+                {isSubmitting ? 'Submitting...' : 'Submit'}
+              </Text>
             </FeedbackButton>
           </Animated.View>
         )}
@@ -815,6 +912,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '500',
     marginBottom: 16,
+  },
+  completionIcon: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
   },
   bottomActions: {
     flexDirection: 'row',

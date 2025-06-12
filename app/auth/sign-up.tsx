@@ -17,10 +17,12 @@ import { Colors } from '../../constants/Colors';
 import { supabase } from '../../lib/supabase';
 import FeedbackButton from '../../components/ui/FeedbackButton';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { useAuth } from '../../hooks/useAuth';
 
 export default function SignUpScreen() {
   const params = useLocalSearchParams();
   const role = params.role as 'doctor' | 'patient' || 'patient';
+  const { signUpWithEmailAndRole } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);

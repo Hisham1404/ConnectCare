@@ -285,8 +285,32 @@ export const DatabaseService = {
   // Patient functions
   async getPatientsByDoctorId(doctorId: string): Promise<Patient[]> {
     try {
-      console.log('Mock: Getting patients for doctor', doctorId);
-      return mockPatients;
+      if (!doctorId || typeof doctorId !== 'string' || doctorId.trim() === '') {
+        console.error('Invalid doctor ID provided to getPatientsByDoctorId');
+        return [];
+      }
+
+      console.log('🔍 Getting patients for doctor:', doctorId);
+      
+      const { data, error } = await supabase
+        .from('patients')
+        .select(`
+          *,
+          profile:profiles(*),
+          assigned_doctor:doctors(
+            *,
+            profile:profiles(*)
+          )
+        `)
+        .eq('assigned_doctor_id', doctorId);
+
+      if (error) {
+        console.error('❌ Error fetching patients by doctor ID:', error);
+        return [];
+      }
+
+      console.log('✅ Patients fetched:', data?.length || 0);
+      return data || [];
     } catch (error) {
       console.error('Error in getPatientsByDoctorId:', error);
       return [];
@@ -295,8 +319,33 @@ export const DatabaseService = {
 
   async getPatientById(patientId: string): Promise<Patient | null> {
     try {
-      const patient = mockPatients.find(p => p.id === patientId);
-      return patient || null;
+      if (!patientId || typeof patientId !== 'string' || patientId.trim() === '') {
+        console.error('Invalid patient ID provided to getPatientById');
+        return null;
+      }
+
+      console.log('🔍 Getting patient by ID:', patientId);
+      
+      const { data, error } = await supabase
+        .from('patients')
+        .select(`
+          *,
+          profile:profiles(*),
+          assigned_doctor:doctors(
+            *,
+            profile:profiles(*)
+          )
+        `)
+        .eq('id', patientId)
+        .single();
+
+      if (error) {
+        console.error('❌ Error fetching patient by ID:', error);
+        return null;
+      }
+
+      console.log('✅ Patient fetched:', data?.profile?.full_name);
+      return data;
     } catch (error) {
       console.error('Error in getPatientById:', error);
       return null;
@@ -306,8 +355,33 @@ export const DatabaseService = {
   // Daily checkin functions
   async getRecentCheckins(patientId: string, limit: number = 10): Promise<DailyCheckin[]> {
     try {
-      console.log('Mock: Getting recent checkins for patient', patientId);
-      return [];
+      if (!patientId || typeof patientId !== 'string' || patientId.trim() === '') {
+        console.error('Invalid patient ID provided to getRecentCheckins');
+        return [];
+      }
+
+      console.log('🔍 Getting recent checkins for patient:', patientId);
+      
+      const { data, error } = await supabase
+        .from('daily_checkins')
+        .select(`
+          *,
+          patient:patients(
+            *,
+            profile:profiles(*)
+          )
+        `)
+        .eq('patient_id', patientId)
+        .order('checkin_date', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        console.error('❌ Error fetching recent checkins:', error);
+        return [];
+      }
+
+      console.log('✅ Recent checkins fetched:', data?.length || 0);
+      return data || [];
     } catch (error) {
       console.error('Error in getRecentCheckins:', error);
       return [];
@@ -316,8 +390,34 @@ export const DatabaseService = {
 
   async getTodaysCheckin(patientId: string): Promise<DailyCheckin | null> {
     try {
-      console.log('Mock: Getting today\'s checkin for patient', patientId);
-      return null;
+      if (!patientId || typeof patientId !== 'string' || patientId.trim() === '') {
+        console.error('Invalid patient ID provided to getTodaysCheckin');
+        return null;
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+      console.log('🔍 Getting today\'s checkin for patient:', patientId, 'date:', today);
+      
+      const { data, error } = await supabase
+        .from('daily_checkins')
+        .select(`
+          *,
+          patient:patients(
+            *,
+            profile:profiles(*)
+          )
+        `)
+        .eq('patient_id', patientId)
+        .eq('checkin_date', today)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+        console.error('❌ Error fetching today\'s checkin:', error);
+        return null;
+      }
+
+      console.log('✅ Today\'s checkin:', data ? 'found' : 'not found');
+      return data || null;
     } catch (error) {
       console.error('Error in getTodaysCheckin:', error);
       return null;
@@ -326,8 +426,27 @@ export const DatabaseService = {
 
   async createCheckin(checkinData: Partial<DailyCheckin>): Promise<DailyCheckin | null> {
     try {
-      console.log('Mock: Creating checkin', checkinData);
-      return null;
+      console.log('📝 Creating checkin:', checkinData);
+      
+      const { data, error } = await supabase
+        .from('daily_checkins')
+        .insert(checkinData)
+        .select(`
+          *,
+          patient:patients(
+            *,
+            profile:profiles(*)
+          )
+        `)
+        .single();
+
+      if (error) {
+        console.error('❌ Error creating checkin:', error);
+        return null;
+      }
+
+      console.log('✅ Checkin created:', data.id);
+      return data;
     } catch (error) {
       console.error('Error in createCheckin:', error);
       return null;
@@ -336,7 +455,24 @@ export const DatabaseService = {
 
   async updateCheckin(checkinId: string, checkinData: Partial<DailyCheckin>): Promise<boolean> {
     try {
-      console.log('Mock: Updating checkin', checkinId, checkinData);
+      if (!checkinId || typeof checkinId !== 'string' || checkinId.trim() === '') {
+        console.error('Invalid checkin ID provided to updateCheckin');
+        return false;
+      }
+
+      console.log('📝 Updating checkin:', checkinId);
+      
+      const { error } = await supabase
+        .from('daily_checkins')
+        .update(checkinData)
+        .eq('id', checkinId);
+
+      if (error) {
+        console.error('❌ Error updating checkin:', error);
+        return false;
+      }
+
+      console.log('✅ Checkin updated successfully');
       return true;
     } catch (error) {
       console.error('Error in updateCheckin:', error);
@@ -373,13 +509,47 @@ export const DatabaseService = {
     activeMonitoring: number;
   }> {
     try {
-      console.log('Mock: Getting dashboard stats for doctor', doctorId);
-      return {
-        totalPatients: mockPatients.length,
-        criticalCases: mockPatients.filter(p => p.status === 'critical').length,
-        dailyCheckins: 2,
-        activeMonitoring: mockPatients.filter(p => p.status === 'active').length,
+      console.log('📊 Getting dashboard stats for doctor:', doctorId);
+      
+      let patientsQuery = supabase.from('patients').select('id, status');
+      
+      if (doctorId) {
+        patientsQuery = patientsQuery.eq('assigned_doctor_id', doctorId);
+      }
+      
+      const { data: patients, error: patientsError } = await patientsQuery;
+      
+      if (patientsError) {
+        console.error('❌ Error fetching patients for stats:', patientsError);
+        return { totalPatients: 0, criticalCases: 0, dailyCheckins: 0, activeMonitoring: 0 };
+      }
+      
+      // Get today's checkins count
+      const today = new Date().toISOString().split('T')[0];
+      let checkinsQuery = supabase
+        .from('daily_checkins')
+        .select('id', { count: 'exact' })
+        .eq('checkin_date', today);
+      
+      if (doctorId) {
+        // Filter checkins for doctor's patients
+        const patientIds = patients?.map(p => p.id) || [];
+        if (patientIds.length > 0) {
+          checkinsQuery = checkinsQuery.in('patient_id', patientIds);
+        }
+      }
+      
+      const { count: dailyCheckins } = await checkinsQuery;
+      
+      const stats = {
+        totalPatients: patients?.length || 0,
+        criticalCases: patients?.filter(p => p.status === 'critical').length || 0,
+        dailyCheckins: dailyCheckins || 0,
+        activeMonitoring: patients?.filter(p => p.status === 'active').length || 0,
       };
+      
+      console.log('✅ Dashboard stats:', stats);
+      return stats;
     } catch (error) {
       console.error('Error in getDashboardStats:', error);
       return {
@@ -394,11 +564,100 @@ export const DatabaseService = {
   // Get recent alerts/critical events
   async getRecentAlerts(doctorId?: string, limit: number = 5): Promise<any[]> {
     try {
-      console.log('Mock: Getting recent alerts for doctor', doctorId);
-      return mockRecentAlerts.slice(0, limit);
+      console.log('🚨 Getting recent alerts for doctor:', doctorId);
+      
+      let alertsQuery = supabase
+        .from('daily_checkins')
+        .select(`
+          *,
+          patient:patients(
+            *,
+            profile:profiles(*)
+          )
+        `)
+        .or('status.eq.overdue,pain_level.gte.7,temperature.gte.101')
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      
+      if (doctorId) {
+        // Get doctor's patients first
+        const { data: patients } = await supabase
+          .from('patients')
+          .select('id')
+          .eq('assigned_doctor_id', doctorId);
+        
+        const patientIds = patients?.map(p => p.id) || [];
+        if (patientIds.length > 0) {
+          alertsQuery = alertsQuery.in('patient_id', patientIds);
+        } else {
+          return []; // No patients assigned to this doctor
+        }
+      }
+      
+      const { data, error } = await alertsQuery;
+      
+      if (error) {
+        console.error('❌ Error fetching recent alerts:', error);
+        return [];
+      }
+      
+      console.log('✅ Recent alerts fetched:', data?.length || 0);
+      return data || [];
     } catch (error) {
       console.error('Error in getRecentAlerts:', error);
       return [];
+    }
+  },
+
+  // Real-time subscriptions
+  subscribeToCheckins(
+    doctorId: string,
+    callback: (payload: any) => void
+  ): RealtimeChannel | null {
+    try {
+      console.log('🔔 Setting up real-time subscription for doctor:', doctorId);
+      
+      const channel = supabase
+        .channel('daily_checkins_changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'daily_checkins'
+          },
+          async (payload) => {
+            console.log('🔔 New checkin received:', payload);
+            
+            // Verify this checkin is for one of the doctor's patients
+            const { data: patient } = await supabase
+              .from('patients')
+              .select('assigned_doctor_id, profile:profiles(*)')
+              .eq('id', payload.new.patient_id)
+              .single();
+            
+            if (patient?.assigned_doctor_id === doctorId) {
+              console.log('✅ Checkin is for assigned patient, triggering callback');
+              callback({
+                ...payload,
+                patient: patient
+              });
+            }
+          }
+        )
+        .subscribe();
+      
+      return channel;
+    } catch (error) {
+      console.error('Error setting up checkins subscription:', error);
+      return null;
+    }
+  },
+
+  unsubscribeFromCheckins(channel: RealtimeChannel | null) {
+    if (channel) {
+      console.log('🔕 Unsubscribing from checkins channel');
+      supabase.removeChannel(channel);
     }
   },
 };
