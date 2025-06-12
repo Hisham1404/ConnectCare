@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import * as WebBrowser from 'expo-web-browser';
 import { Heart, Shield, Users, Activity, Brain, Stethoscope, ArrowRight, Star, CircleCheck as CheckCircle, User, Calendar } from 'lucide-react-native';
 import { Colors, SemanticColors } from '../constants/Colors';
 
@@ -93,10 +94,7 @@ export default function WelcomeScreen() {
         <TouchableOpacity 
           style={styles.boltBadgeButton}
           onPress={() => {
-            // Open Bolt.new in a new tab/window
-            if (typeof window !== 'undefined') {
-              window.open('https://bolt.new/', '_blank');
-            }
+            WebBrowser.openBrowserAsync('https://bolt.new/');
           }}
         >
           <Image 
