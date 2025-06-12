@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,20 +7,26 @@ import {
   TouchableOpacity,
   Image,
   Switch,
-  Alert,
   Dimensions,
 } from 'react-native';
-import { User, Settings, Bell, Shield, CircleHelp as HelpCircle, LogOut, CreditCard as Edit3, Award, Activity, Users, Calendar, ChevronRight, Star, TrendingUp, Heart, Pill, FileText, Phone, MapPin, Clock, Target, Zap, Download, Share, Camera, CircleCheck as CheckCircle } from 'lucide-react-native';
-import { useAuth } from '../../hooks/useAuth';
+import { User, Settings, Bell, Shield, CircleHelp as HelpCircle, CreditCard as Edit3, Award, Activity, Users, Calendar, ChevronRight, Star, TrendingUp, Heart, Pill, FileText, Phone, MapPin, Clock, Target, Zap, Download, Share, Camera, CircleCheck as CheckCircle } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
 
 export default function ProfileScreen() {
-  const { profile, signOut, isDoctor, switchToDoctorMode } = useAuth();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [darkModeEnabled, setDarkModeEnabled] = useState(false);
   const [medicationReminders, setMedicationReminders] = useState(true);
   const [emergencyAlerts, setEmergencyAlerts] = useState(true);
+
+  // Mock profile data
+  const mockProfile = {
+    id: 'demo-patient-id',
+    email: 'patient@connectcare.ai',
+    full_name: 'Rajesh Kumar',
+    phone: '+91 98765 43220',
+    role: 'patient',
+    avatar_url: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+  };
 
   // Patient-specific data
   const healthStats = [
@@ -110,38 +116,12 @@ export default function ProfileScreen() {
     { icon: HelpCircle, label: 'Help & Support', color: '#06b6d4', hasArrow: true },
   ];
 
-  const handleSignOut = () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: signOut,
-        },
-      ]
-    );
-  };
-
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Profile</Text>
         <View style={styles.headerActions}>
-          {!isDoctor && (
-            <TouchableOpacity 
-              style={styles.switchModeButton}
-              onPress={switchToDoctorMode}
-            >
-              <Users color="#3b82f6" size={20} />
-            </TouchableOpacity>
-          )}
           <TouchableOpacity style={styles.editButton}>
             <Edit3 color="#3b82f6" size={20} />
           </TouchableOpacity>
@@ -151,16 +131,16 @@ export default function ProfileScreen() {
       {/* Profile Card */}
       <View style={styles.profileCard}>
         <View style={styles.avatarContainer}>
-          <Image source={{ uri: profile?.avatar_url }} style={styles.avatar} />
+          <Image source={{ uri: mockProfile?.avatar_url }} style={styles.avatar} />
           <TouchableOpacity style={styles.cameraButton}>
             <Camera color="#ffffff" size={16} />
           </TouchableOpacity>
         </View>
         
         <View style={styles.profileInfo}>
-          <Text style={styles.profileName}>{profile?.full_name}</Text>
+          <Text style={styles.profileName}>{mockProfile?.full_name}</Text>
           <Text style={styles.profileRole}>
-            {profile?.role?.charAt(0).toUpperCase() + profile?.role?.slice(1)}
+            {mockProfile?.role?.charAt(0).toUpperCase() + mockProfile?.role?.slice(1)}
           </Text>
           
           <View style={styles.profileDetails}>
@@ -330,12 +310,6 @@ export default function ProfileScreen() {
         ))}
       </View>
 
-      {/* Logout */}
-      <TouchableOpacity style={styles.logoutButton} onPress={handleSignOut}>
-        <LogOut color="#ef4444" size={20} />
-        <Text style={styles.logoutText}>Sign Out</Text>
-      </TouchableOpacity>
-
       {/* App Version */}
       <Text style={styles.versionText}>ConnectCare AI v1.0.0</Text>
     </ScrollView>
@@ -364,14 +338,6 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
     gap: 8,
-  },
-  switchModeButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#eff6ff',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   editButton: {
     width: 44,
@@ -701,27 +667,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#1f2937',
-  },
-  logoutButton: {
-    backgroundColor: '#ffffff',
-    marginHorizontal: 20,
-    borderRadius: 16,
-    padding: 16,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  logoutText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#ef4444',
   },
   versionText: {
     textAlign: 'center',

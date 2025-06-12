@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { useAuth } from '../hooks/useAuth';
-import { DatabaseService } from '../lib/database';
-import type { RealtimeChannel } from '@supabase/supabase-js';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 
 // Import components
@@ -16,29 +13,92 @@ import ReportsTab from '../components/dashboard/tabs/ReportsTab';
 import SettingsTab from '../components/dashboard/tabs/SettingsTab';
 
 export default function DoctorDashboard() {
-  const { profile, switchToPatientMode } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('overview');
   const [isMonitoring, setIsMonitoring] = useState(false);
   const [selectedPatientForMonitoring, setSelectedPatientForMonitoring] = useState('patient-1');
-  const [realtimeChannel, setRealtimeChannel] = useState<RealtimeChannel | null>(null);
 
-  // Real data state
-  const [dashboardStats, setDashboardStats] = useState({
+  // Mock profile data
+  const mockProfile = {
+    id: 'demo-doctor-id',
+    email: 'doctor@connectcare.ai',
+    full_name: 'Dr. Rajesh Kumar',
+    phone: '+91 98765 43210',
+    role: 'doctor',
+    avatar_url: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+  };
+
+  // Mock dashboard data
+  const [dashboardStats] = useState({
     totalPatients: 12,
     criticalCases: 2,
     stablePatients: 8,
     pendingReviews: 3,
+    dailyCheckins: 8,
+    activeMonitoring: 5,
   });
 
-  const [patients, setPatients] = useState<any[]>([]);
-  const [doctorData, setDoctorData] = useState<any>(null);
+  const [patients] = useState([
+    {
+      id: 'patient-1',
+      name: 'Rajesh Kumar',
+      age: 58,
+      condition: 'Post-Cardiac Surgery',
+      priority: 'stable',
+      lastCheckin: '2 hours ago',
+      avatar: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+      vitals: {
+        heartRate: '72',
+        bloodPressure: '120/80',
+        temperature: '98.6',
+        oxygen: '98',
+      },
+      recoveryStage: 'Week 2',
+      riskScore: 25,
+      hasNewCheckin: false,
+    },
+    {
+      id: 'patient-2',
+      name: 'Priya Sharma',
+      age: 45,
+      condition: 'Hip Replacement',
+      priority: 'critical',
+      lastCheckin: '30 minutes ago',
+      avatar: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+      vitals: {
+        heartRate: '88',
+        bloodPressure: '140/90',
+        temperature: '99.2',
+        oxygen: '96',
+      },
+      recoveryStage: 'Week 1',
+      riskScore: 75,
+      hasNewCheckin: true,
+    },
+    {
+      id: 'patient-3',
+      name: 'Amit Patel',
+      age: 62,
+      condition: 'Gallbladder Surgery',
+      priority: 'moderate',
+      lastCheckin: '1 hour ago',
+      avatar: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+      vitals: {
+        heartRate: '76',
+        bloodPressure: '130/85',
+        temperature: '98.8',
+        oxygen: '97',
+      },
+      recoveryStage: 'Week 3',
+      riskScore: 45,
+      hasNewCheckin: false,
+    },
+  ]);
 
-  const [todaysAppointments, setTodaysAppointments] = useState([
+  const [todaysAppointments] = useState([
     {
       id: '1',
       patientName: 'Rajesh Kumar',
@@ -65,105 +125,26 @@ export default function DoctorDashboard() {
     },
   ]);
 
-  // Load dashboard data on component mount
+  // Simulate loading
   useEffect(() => {
-    loadDashboardData();
-  }, [profile]);
-
-  // Set up real-time subscriptions for doctors
-  useEffect(() => {
-    if (profile?.role === 'doctor' && doctorData?.id) {
-      console.log('🔔 Setting up real-time subscription for doctor:', doctorData.id);
-      
-      const channel = DatabaseService.subscribeToCheckins(
-        doctorData.id,
-        handleNewCheckin
-      );
-      
-      setRealtimeChannel(channel);
-      
-      // Cleanup subscription on unmount
-      return () => {
-        if (channel) {
-          DatabaseService.unsubscribeFromCheckins(channel);
-        }
-      };
-    }
-  }, [doctorData]);
-
-  const loadDashboardData = async () => {
-    if (!profile) {
-      console.log('No profile available, skipping data load');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-      console.log('📊 Loading dashboard data for role:', profile.role);
-
-      if (profile.role === 'doctor') {
-        // Load doctor-specific data
-        const doctor = await DatabaseService.getDoctorByProfileId(profile.id);
-        if (doctor) {
-          setDoctorData(doctor);
-          
-          // Load doctor's patients
-          const doctorPatients = await DatabaseService.getPatientsByDoctorId(doctor.id);
-          setPatients(doctorPatients);
-          
-          // Load dashboard statistics
-          const stats = await DatabaseService.getDashboardStats(doctor.id);
-          setDashboardStats(stats);
-          
-          console.log('✅ Doctor dashboard data loaded:', {
-            patients: doctorPatients.length,
-            stats
-          });
-        } else {
-          setError('Doctor profile not found. Please contact support.');
-        }
-      } else if (profile.role === 'patient') {
-        // Load patient-specific data
-        const patient = await DatabaseService.getPatientById(profile.id);
-        if (patient) {
-          // For patients, we might want to show their own data
-          setPatients([patient]);
-          
-          // Load patient's recent checkins
-          const recentCheckins = await DatabaseService.getRecentCheckins(patient.id);
-          console.log('✅ Patient data loaded:', {
-            checkins: recentCheckins.length
-          });
-        } else {
-          setError('Patient profile not found. Please contact support.');
-        }
-      }
-    } catch (error) {
-      console.error('❌ Error loading dashboard data:', error);
-      setError('Failed to load dashboard data. Please try again.');
-    } finally {
+    const timer = setTimeout(() => {
       setLoading(false);
-    }
-  };
+    }, 1000);
 
-  const handleNewCheckin = (payload: any) => {
-    console.log('🔔 New checkin notification:', payload);
-    
-    // Update dashboard stats
-    setDashboardStats(prev => ({
-      ...prev,
-      dailyCheckins: prev.dailyCheckins + 1
-    }));
-    
-    // You could also show a notification to the user here
-    // For example, using a toast notification or updating a notification badge
-  };
+    return () => clearTimeout(timer);
+  }, []);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadDashboardData();
-    setRefreshing(false);
+    // Simulate refresh delay
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 1000);
+  };
+
+  const switchToPatientMode = () => {
+    console.log('Switching to patient mode');
+    // Navigate to patient interface
   };
 
   // Show loading state while data is being fetched
@@ -171,44 +152,14 @@ export default function DoctorDashboard() {
     return (
       <View style={styles.loadingContainer}>
         <LoadingSpinner size="large" />
-      </View>
-    );
-  }
-
-  // Show error state if data loading failed
-  if (error) {
-    return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={loadDashboardData}>
-          <Text style={styles.retryButtonText}>Retry</Text>
-        </TouchableOpacity>
+        <Text style={styles.loadingText}>Loading dashboard...</Text>
       </View>
     );
   }
 
   const renderTabContent = () => {
-    // Conditionally render based on user role
-    const userRole = profile?.role || 'patient';
-    
     switch (activeTab) {
       case 'overview':
-        if (userRole === 'patient') {
-          // For patients, show their own overview
-          return (
-            <OverviewTab
-              dashboardStats={{
-                totalPatients: 1,
-                criticalCases: 0,
-                stablePatients: 1,
-                pendingReviews: 0
-              }}
-              todaysAppointments={todaysAppointments}
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-            />
-          );
-        }
         return (
           <OverviewTab
             dashboardStats={dashboardStats}
@@ -272,9 +223,9 @@ export default function DoctorDashboard() {
       <StatusBar style="dark" />
       
       <DashboardHeader
-        profile={profile}
+        profile={mockProfile}
         onSwitchMode={switchToPatientMode}
-        notificationCount={3}
+        notificationCount={dashboardStats.pendingReviews}
       />
 
       <View style={styles.mainContent}>
@@ -302,30 +253,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#f8fafc',
+    gap: 16,
   },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f8fafc',
-    paddingHorizontal: 20,
-  },
-  errorText: {
+  loadingText: {
     fontSize: 16,
-    color: '#ef4444',
-    textAlign: 'center',
-    marginBottom: 20,
-    lineHeight: 24,
-  },
-  retryButton: {
-    backgroundColor: '#3b82f6',
-    borderRadius: 12,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-  },
-  retryButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
+    color: '#6b7280',
+    fontWeight: '500',
   },
 });

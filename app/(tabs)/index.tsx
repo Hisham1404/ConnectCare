@@ -11,26 +11,30 @@ import {
   FlatList,
 } from 'react-native';
 import { Pill, Heart, Activity, Calendar, Clock, User, TrendingUp, CircleAlert as AlertCircle, CircleCheck as CheckCircle, Apple, Dumbbell, Thermometer, Droplets, Zap, Target, Award, Bell, Phone, Video, MessageSquare, Plus, ChevronRight } from 'lucide-react-native';
-import { useAuth } from '../../hooks/useAuth';
-import { useOnboarding } from '../../hooks/useOnboarding';
 import { Colors, SemanticColors } from '../../constants/Colors';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import FeedbackButton from '../../components/ui/FeedbackButton';
-import OnboardingOverlay from '../../components/onboarding/OnboardingOverlay';
 
 const { width } = Dimensions.get('window');
 
 export default function PatientDashboard() {
-  const { profile, switchToDoctorMode } = useAuth();
-  const { showOnboarding, isLoading: onboardingLoading, completeOnboarding } = useOnboarding();
   const [refreshing, setRefreshing] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
+
+  // Mock profile data
+  const mockProfile = {
+    id: 'demo-patient-id',
+    email: 'patient@connectcare.ai',
+    full_name: 'Rajesh Kumar',
+    phone: '+91 98765 43220',
+    role: 'patient',
+    avatar_url: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+  };
 
   // Simulate data loading
   useEffect(() => {
     const loadData = async () => {
-      // Simulate API calls
       await new Promise(resolve => setTimeout(resolve, 1500));
       setIsLoadingData(false);
     };
@@ -199,7 +203,6 @@ export default function PatientDashboard() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    // Simulate data refresh
     setTimeout(() => setRefreshing(false), 1000);
   };
 
@@ -305,398 +308,360 @@ export default function PatientDashboard() {
     </FeedbackButton>
   );
 
-  // Show loading state while onboarding status is being checked
-  if (onboardingLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <LoadingSpinner size="large" />
-        <Text style={styles.loadingText}>Loading ConnectCare AI...</Text>
-      </View>
-    );
-  }
-
   return (
-    <>
-      <ScrollView 
-        style={styles.container}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
+    <ScrollView 
+      style={styles.container}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          {isLoadingData ? (
+            <SkeletonLoader width={48} height={48} borderRadius={24} style={styles.avatar} />
+          ) : (
+            <Image 
+              source={{ uri: mockProfile?.avatar_url }} 
+              style={styles.avatar} 
+            />
+          )}
+          <View>
             {isLoadingData ? (
-              <SkeletonLoader width={48} height={48} borderRadius={24} style={styles.avatar} />
+              <>
+                <SkeletonLoader width={80} height={14} style={{ marginBottom: 4 }} />
+                <SkeletonLoader width={120} height={18} style={{ marginBottom: 4 }} />
+                <SkeletonLoader width={100} height={12} />
+              </>
             ) : (
-              <Image 
-                source={{ uri: profile?.avatar_url }} 
-                style={styles.avatar} 
-              />
+              <>
+                <Text style={styles.greeting}>Good Morning</Text>
+                <Text style={styles.userName}>{mockProfile?.full_name}</Text>
+                <Text style={styles.healthStatus}>Day 12 of recovery</Text>
+              </>
             )}
-            <View>
-              {isLoadingData ? (
-                <>
-                  <SkeletonLoader width={80} height={14} style={{ marginBottom: 4 }} />
-                  <SkeletonLoader width={120} height={18} style={{ marginBottom: 4 }} />
-                  <SkeletonLoader width={100} height={12} />
-                </>
-              ) : (
-                <>
-                  <Text style={styles.greeting}>Good Morning</Text>
-                  <Text style={styles.userName}>{profile?.full_name}</Text>
-                  <Text style={styles.healthStatus}>Day 12 of recovery</Text>
-                </>
-              )}
-            </View>
           </View>
-          
-          <View style={styles.headerRight}>
-            <FeedbackButton
-              onPress={() => console.log('Notifications pressed')}
-              style={styles.notificationButton}
-            >
-              <Bell color={Colors.textSecondary} size={24} />
-              {!isLoadingData && (
-                <View style={styles.notificationBadge}>
-                  <Text style={styles.badgeText}>{getPendingMedications().length}</Text>
-                </View>
-              )}
-            </FeedbackButton>
+        </View>
+        
+        <View style={styles.headerRight}>
+          <FeedbackButton
+            onPress={() => console.log('Notifications pressed')}
+            style={styles.notificationButton}
+          >
+            <Bell color={Colors.textSecondary} size={24} />
+            {!isLoadingData && (
+              <View style={styles.notificationBadge}>
+                <Text style={styles.badgeText}>{getPendingMedications().length}</Text>
+              </View>
+            )}
+          </FeedbackButton>
+        </View>
+      </View>
+
+      {/* Recovery Progress Overview */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Recovery Progress</Text>
+        
+        {isLoadingData ? (
+          <View style={styles.progressCard}>
+            <SkeletonLoader width="100%" height={120} />
+          </View>
+        ) : (
+          <View style={styles.progressCard}>
+            <View style={styles.progressHeader}>
+              <Text style={styles.progressTitle}>Overall Recovery</Text>
+              <Text style={styles.progressPercentageEnhanced}>{recoveryProgress.overall}%</Text>
+            </View>
             
-            <FeedbackButton 
-              onPress={switchToDoctorMode}
-              style={styles.switchModeButton}
-            >
-              <User color={Colors.accent} size={20} />
-            </FeedbackButton>
+            <View style={styles.progressBarContainer}>
+              <View style={styles.progressBar}>
+                <View 
+                  style={[
+                    styles.progressFill,
+                    { width: `${recoveryProgress.overall}%` }
+                  ]} 
+                />
+              </View>
+            </View>
+            
+            <View style={styles.progressMetrics}>
+              <View style={styles.progressMetric}>
+                <Text style={styles.progressMetricLabel}>Pain Level</Text>
+                <Text style={styles.progressMetricValue}>{recoveryProgress.painLevel}/10</Text>
+              </View>
+              <View style={styles.progressMetric}>
+                <Text style={styles.progressMetricLabel}>Mobility</Text>
+                <Text style={styles.progressMetricValue}>{recoveryProgress.mobilityScore}%</Text>
+              </View>
+              <View style={styles.progressMetric}>
+                <Text style={styles.progressMetricLabel}>Sleep</Text>
+                <Text style={styles.progressMetricValue}>{recoveryProgress.sleepQuality}%</Text>
+              </View>
+              <View style={styles.progressMetric}>
+                <Text style={styles.progressMetricLabel}>Energy</Text>
+                <Text style={styles.progressMetricValue}>{recoveryProgress.energyLevel}%</Text>
+              </View>
+            </View>
           </View>
+        )}
+      </View>
+
+      {/* Today's Medications */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Today's Medications</Text>
+          <FeedbackButton
+            onPress={() => console.log('View all medications')}
+            style={styles.seeAllButton}
+          >
+            <Text style={styles.seeAll}>View All</Text>
+            <ChevronRight color={Colors.accent} size={16} />
+          </FeedbackButton>
         </View>
 
-        {/* Recovery Progress Overview - Enhanced Visual Hierarchy */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recovery Progress</Text>
-          
+        {isLoadingData ? (
+          <View style={styles.carouselContainer}>
+            <SkeletonLoader width={140} height={120} borderRadius={12} style={{ marginRight: 12 }} />
+            <SkeletonLoader width={140} height={120} borderRadius={12} style={{ marginRight: 12 }} />
+            <SkeletonLoader width={140} height={120} borderRadius={12} />
+          </View>
+        ) : (
+          <FlatList
+            data={todaysMedications}
+            renderItem={renderMedicationCard}
+            keyExtractor={(item) => item.id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.carouselContainer}
+            ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
+          />
+        )}
+      </View>
+
+      {/* Health Metrics */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>My Health Metrics</Text>
+          <FeedbackButton
+            onPress={() => console.log('Log health metrics')}
+            style={styles.addButton}
+          >
+            <Plus color={Colors.accent} size={16} />
+            <Text style={styles.addButtonText}>Log</Text>
+          </FeedbackButton>
+        </View>
+        
+        <View style={styles.metricsGrid}>
           {isLoadingData ? (
-            <View style={styles.progressCard}>
-              <SkeletonLoader width="100%" height={120} />
-            </View>
+            <>
+              <SkeletonLoader width={(width - 52) / 2} height={140} borderRadius={16} />
+              <SkeletonLoader width={(width - 52) / 2} height={140} borderRadius={16} />
+              <SkeletonLoader width={(width - 52) / 2} height={140} borderRadius={16} />
+              <SkeletonLoader width={(width - 52) / 2} height={140} borderRadius={16} />
+            </>
           ) : (
-            <View style={styles.progressCard}>
-              <View style={styles.progressHeader}>
-                <Text style={styles.progressTitle}>Overall Recovery</Text>
-                <Text style={styles.progressPercentageEnhanced}>{recoveryProgress.overall}%</Text>
-              </View>
-              
-              <View style={styles.progressBarContainer}>
-                <View style={styles.progressBar}>
-                  <View 
-                    style={[
-                      styles.progressFill,
-                      { width: `${recoveryProgress.overall}%` }
-                    ]} 
-                  />
-                </View>
-              </View>
-              
-              <View style={styles.progressMetrics}>
-                <View style={styles.progressMetric}>
-                  <Text style={styles.progressMetricLabel}>Pain Level</Text>
-                  <Text style={styles.progressMetricValue}>{recoveryProgress.painLevel}/10</Text>
-                </View>
-                <View style={styles.progressMetric}>
-                  <Text style={styles.progressMetricLabel}>Mobility</Text>
-                  <Text style={styles.progressMetricValue}>{recoveryProgress.mobilityScore}%</Text>
-                </View>
-                <View style={styles.progressMetric}>
-                  <Text style={styles.progressMetricLabel}>Sleep</Text>
-                  <Text style={styles.progressMetricValue}>{recoveryProgress.sleepQuality}%</Text>
-                </View>
-                <View style={styles.progressMetric}>
-                  <Text style={styles.progressMetricLabel}>Energy</Text>
-                  <Text style={styles.progressMetricValue}>{recoveryProgress.energyLevel}%</Text>
-                </View>
-              </View>
-            </View>
-          )}
-        </View>
-
-        {/* Today's Medications - Horizontal Carousel */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Today's Medications</Text>
-            <FeedbackButton
-              onPress={() => console.log('View all medications')}
-              style={styles.seeAllButton}
-            >
-              <Text style={styles.seeAll}>View All</Text>
-              <ChevronRight color={Colors.accent} size={16} />
-            </FeedbackButton>
-          </View>
-
-          {isLoadingData ? (
-            <View style={styles.carouselContainer}>
-              <SkeletonLoader width={140} height={120} borderRadius={12} style={{ marginRight: 12 }} />
-              <SkeletonLoader width={140} height={120} borderRadius={12} style={{ marginRight: 12 }} />
-              <SkeletonLoader width={140} height={120} borderRadius={12} />
-            </View>
-          ) : (
-            <FlatList
-              data={todaysMedications}
-              renderItem={renderMedicationCard}
-              keyExtractor={(item) => item.id}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.carouselContainer}
-              ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
-            />
-          )}
-        </View>
-
-        {/* Health Metrics */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>My Health Metrics</Text>
-            <FeedbackButton
-              onPress={() => console.log('Log health metrics')}
-              style={styles.addButton}
-            >
-              <Plus color={Colors.accent} size={16} />
-              <Text style={styles.addButtonText}>Log</Text>
-            </FeedbackButton>
-          </View>
-          
-          <View style={styles.metricsGrid}>
-            {isLoadingData ? (
-              <>
-                <SkeletonLoader width={(width - 52) / 2} height={140} borderRadius={16} />
-                <SkeletonLoader width={(width - 52) / 2} height={140} borderRadius={16} />
-                <SkeletonLoader width={(width - 52) / 2} height={140} borderRadius={16} />
-                <SkeletonLoader width={(width - 52) / 2} height={140} borderRadius={16} />
-              </>
-            ) : (
-              healthMetrics.map((metric) => {
-                const TrendIcon = getTrendIcon(metric.trend);
-                return (
-                  <FeedbackButton
-                    key={metric.id}
-                    onPress={() => console.log('Metric pressed:', metric.label)}
-                    style={styles.metricCard}
-                  >
-                    <View style={styles.metricHeader}>
-                      <View style={[styles.metricIcon, { backgroundColor: `${metric.color}${Colors.opacity.light}` }]}>
-                        <metric.icon color={metric.color} size={20} />
-                      </View>
-                      <TrendIcon color={getStatusColor(metric.status)} size={16} />
+            healthMetrics.map((metric) => {
+              const TrendIcon = getTrendIcon(metric.trend);
+              return (
+                <FeedbackButton
+                  key={metric.id}
+                  onPress={() => console.log('Metric pressed:', metric.label)}
+                  style={styles.metricCard}
+                >
+                  <View style={styles.metricHeader}>
+                    <View style={[styles.metricIcon, { backgroundColor: `${metric.color}${Colors.opacity.light}` }]}>
+                      <metric.icon color={metric.color} size={20} />
                     </View>
-                    
-                    <Text style={styles.metricValue}>
-                      {metric.value}
-                      <Text style={styles.metricUnit}> {metric.unit}</Text>
-                    </Text>
-                    <Text style={styles.metricLabel}>{metric.label}</Text>
-                    <Text style={styles.metricLastUpdated}>{metric.lastUpdated}</Text>
-                    
-                    <View style={[
-                      styles.metricStatus,
-                      { backgroundColor: `${getStatusColor(metric.status)}${Colors.opacity.light}` }
-                    ]}>
-                      <Text style={[
-                        styles.metricStatusText,
-                        { color: getStatusColor(metric.status) }
-                      ]}>
-                        {metric.status.toUpperCase()}
-                      </Text>
-                    </View>
-                  </FeedbackButton>
-                );
-              })
-            )}
-          </View>
-        </View>
-
-        {/* Next Appointment */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Next Appointment</Text>
-          
-          {isLoadingData ? (
-            <SkeletonLoader width="100%" height={180} borderRadius={16} />
-          ) : (
-            <View style={styles.appointmentCard}>
-              <View style={styles.appointmentHeader}>
-                <Image source={{ uri: nextAppointment.avatar }} style={styles.doctorAvatar} />
-                <View style={styles.appointmentInfo}>
-                  <Text style={styles.doctorName}>{nextAppointment.doctor}</Text>
-                  <Text style={styles.doctorSpecialty}>{nextAppointment.specialty}</Text>
-                  <Text style={styles.appointmentType}>{nextAppointment.type}</Text>
-                </View>
-                <View style={styles.appointmentBadge}>
-                  {nextAppointment.isVideoCall ? (
-                    <Video color={Colors.accent} size={16} />
-                  ) : (
-                    <Calendar color={Colors.accent} size={16} />
-                  )}
-                </View>
-              </View>
-              
-              <View style={styles.appointmentDetails}>
-                <View style={styles.appointmentDetailItem}>
-                  <Calendar color={Colors.textSecondary} size={16} />
-                  <Text style={styles.appointmentDetailText}>{nextAppointment.date}</Text>
-                </View>
-                <View style={styles.appointmentDetailItem}>
-                  <Clock color={Colors.textSecondary} size={16} />
-                  <Text style={styles.appointmentDetailText}>{nextAppointment.time}</Text>
-                </View>
-              </View>
-              
-              <View style={styles.appointmentActions}>
-                <FeedbackButton
-                  onPress={() => console.log('Call doctor')}
-                  style={styles.appointmentSecondaryButton}
-                >
-                  <Phone color={Colors.textSecondary} size={16} />
-                  <Text style={styles.appointmentSecondaryText}>Call</Text>
-                </FeedbackButton>
-                
-                <FeedbackButton
-                  onPress={() => console.log('Message doctor')}
-                  style={styles.appointmentSecondaryButton}
-                >
-                  <MessageSquare color={Colors.textSecondary} size={16} />
-                  <Text style={styles.appointmentSecondaryText}>Message</Text>
-                </FeedbackButton>
-                
-                <FeedbackButton
-                  onPress={() => console.log('Join video call')}
-                  style={styles.appointmentPrimaryButton}
-                >
-                  <Video color="#ffffff" size={16} />
-                  <Text style={styles.appointmentPrimaryText}>Join Video Call</Text>
-                </FeedbackButton>
-              </View>
-            </View>
-          )}
-        </View>
-
-        {/* Health Recommendations - Horizontal Carousel */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Today's Health Plan</Text>
-            <View style={styles.completionContainer}>
-              {isLoadingData ? (
-                <SkeletonLoader width={80} height={16} />
-              ) : (
-                <>
-                  <Text style={styles.completionText}>
-                    {getCompletedRecommendations()}/{healthRecommendations.length} completed
+                    <TrendIcon color={getStatusColor(metric.status)} size={16} />
+                  </View>
+                  
+                  <Text style={styles.metricValue}>
+                    {metric.value}
+                    <Text style={styles.metricUnit}> {metric.unit}</Text>
                   </Text>
-                  <ChevronRight color={Colors.success} size={16} />
-                </>
-              )}
-            </View>
-          </View>
-          
-          {isLoadingData ? (
-            <View style={styles.carouselContainer}>
-              <SkeletonLoader width={160} height={140} borderRadius={12} style={{ marginRight: 12 }} />
-              <SkeletonLoader width={160} height={140} borderRadius={12} style={{ marginRight: 12 }} />
-              <SkeletonLoader width={160} height={140} borderRadius={12} />
-            </View>
-          ) : (
-            <FlatList
-              data={healthRecommendations}
-              renderItem={renderRecommendationCard}
-              keyExtractor={(item) => item.id}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.carouselContainer}
-              ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
-            />
+                  <Text style={styles.metricLabel}>{metric.label}</Text>
+                  <Text style={styles.metricLastUpdated}>{metric.lastUpdated}</Text>
+                  
+                  <View style={[
+                    styles.metricStatus,
+                    { backgroundColor: `${getStatusColor(metric.status)}${Colors.opacity.light}` }
+                  ]}>
+                    <Text style={[
+                      styles.metricStatusText,
+                      { color: getStatusColor(metric.status) }
+                    ]}>
+                      {metric.status.toUpperCase()}
+                    </Text>
+                  </View>
+                </FeedbackButton>
+              );
+            })
           )}
         </View>
+      </View>
 
-        {/* Quick Actions */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          
-          <View style={styles.quickActionsGrid}>
+      {/* Next Appointment */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Next Appointment</Text>
+        
+        {isLoadingData ? (
+          <SkeletonLoader width="100%" height={180} borderRadius={16} />
+        ) : (
+          <View style={styles.appointmentCard}>
+            <View style={styles.appointmentHeader}>
+              <Image source={{ uri: nextAppointment.avatar }} style={styles.doctorAvatar} />
+              <View style={styles.appointmentInfo}>
+                <Text style={styles.doctorName}>{nextAppointment.doctor}</Text>
+                <Text style={styles.doctorSpecialty}>{nextAppointment.specialty}</Text>
+                <Text style={styles.appointmentType}>{nextAppointment.type}</Text>
+              </View>
+              <View style={styles.appointmentBadge}>
+                {nextAppointment.isVideoCall ? (
+                  <Video color={Colors.accent} size={16} />
+                ) : (
+                  <Calendar color={Colors.accent} size={16} />
+                )}
+              </View>
+            </View>
+            
+            <View style={styles.appointmentDetails}>
+              <View style={styles.appointmentDetailItem}>
+                <Calendar color={Colors.textSecondary} size={16} />
+                <Text style={styles.appointmentDetailText}>{nextAppointment.date}</Text>
+              </View>
+              <View style={styles.appointmentDetailItem}>
+                <Clock color={Colors.textSecondary} size={16} />
+                <Text style={styles.appointmentDetailText}>{nextAppointment.time}</Text>
+              </View>
+            </View>
+            
+            <View style={styles.appointmentActions}>
+              <FeedbackButton
+                onPress={() => console.log('Call doctor')}
+                style={styles.appointmentSecondaryButton}
+              >
+                <Phone color={Colors.textSecondary} size={16} />
+                <Text style={styles.appointmentSecondaryText}>Call</Text>
+              </FeedbackButton>
+              
+              <FeedbackButton
+                onPress={() => console.log('Message doctor')}
+                style={styles.appointmentSecondaryButton}
+              >
+                <MessageSquare color={Colors.textSecondary} size={16} />
+                <Text style={styles.appointmentSecondaryText}>Message</Text>
+              </FeedbackButton>
+              
+              <FeedbackButton
+                onPress={() => console.log('Join video call')}
+                style={styles.appointmentPrimaryButton}
+              >
+                <Video color="#ffffff" size={16} />
+                <Text style={styles.appointmentPrimaryText}>Join Video Call</Text>
+              </FeedbackButton>
+            </View>
+          </View>
+        )}
+      </View>
+
+      {/* Health Recommendations */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Today's Health Plan</Text>
+          <View style={styles.completionContainer}>
             {isLoadingData ? (
-              <>
-                <SkeletonLoader width={(width - 52) / 2} height={100} borderRadius={16} />
-                <SkeletonLoader width={(width - 52) / 2} height={100} borderRadius={16} />
-                <SkeletonLoader width={(width - 52) / 2} height={100} borderRadius={16} />
-                <SkeletonLoader width={(width - 52) / 2} height={100} borderRadius={16} />
-              </>
+              <SkeletonLoader width={80} height={16} />
             ) : (
               <>
-                <FeedbackButton
-                  onPress={() => console.log('Emergency call')}
-                  style={styles.quickActionCard}
-                >
-                  <View style={[styles.quickActionIcon, { backgroundColor: `${Colors.error}${Colors.opacity.light}` }]}>
-                    <Zap color={Colors.error} size={24} />
-                  </View>
-                  <Text style={styles.quickActionTitle}>Emergency Call</Text>
-                </FeedbackButton>
-                
-                <FeedbackButton
-                  onPress={() => console.log('Log symptoms')}
-                  style={styles.quickActionCard}
-                >
-                  <View style={[styles.quickActionIcon, { backgroundColor: `${Colors.accent}${Colors.opacity.light}` }]}>
-                    <Activity color={Colors.accent} size={24} />
-                  </View>
-                  <Text style={styles.quickActionTitle}>Log Symptoms</Text>
-                </FeedbackButton>
-                
-                <FeedbackButton
-                  onPress={() => console.log('Health goals')}
-                  style={styles.quickActionCard}
-                >
-                  <View style={[styles.quickActionIcon, { backgroundColor: `${Colors.success}${Colors.opacity.light}` }]}>
-                    <Award color={Colors.success} size={24} />
-                  </View>
-                  <Text style={styles.quickActionTitle}>Health Goals</Text>
-                </FeedbackButton>
-                
-                <FeedbackButton
-                  onPress={() => console.log('Schedule visit')}
-                  style={styles.quickActionCard}
-                >
-                  <View style={[styles.quickActionIcon, { backgroundColor: `${Colors.warning}${Colors.opacity.light}` }]}>
-                    <Calendar color={Colors.warning} size={24} />
-                  </View>
-                  <Text style={styles.quickActionTitle}>Schedule Visit</Text>
-                </FeedbackButton>
+                <Text style={styles.completionText}>
+                  {getCompletedRecommendations()}/{healthRecommendations.length} completed
+                </Text>
+                <ChevronRight color={Colors.success} size={16} />
               </>
             )}
           </View>
         </View>
-      </ScrollView>
+        
+        {isLoadingData ? (
+          <View style={styles.carouselContainer}>
+            <SkeletonLoader width={160} height={140} borderRadius={12} style={{ marginRight: 12 }} />
+            <SkeletonLoader width={160} height={140} borderRadius={12} style={{ marginRight: 12 }} />
+            <SkeletonLoader width={160} height={140} borderRadius={12} />
+          </View>
+        ) : (
+          <FlatList
+            data={healthRecommendations}
+            renderItem={renderRecommendationCard}
+            keyExtractor={(item) => item.id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.carouselContainer}
+            ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
+          />
+        )}
+      </View>
 
-      {/* Onboarding Overlay */}
-      <OnboardingOverlay
-        visible={showOnboarding}
-        onComplete={completeOnboarding}
-        onSkip={completeOnboarding}
-      />
-    </>
+      {/* Quick Actions */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        
+        <View style={styles.quickActionsGrid}>
+          {isLoadingData ? (
+            <>
+              <SkeletonLoader width={(width - 52) / 2} height={100} borderRadius={16} />
+              <SkeletonLoader width={(width - 52) / 2} height={100} borderRadius={16} />
+              <SkeletonLoader width={(width - 52) / 2} height={100} borderRadius={16} />
+              <SkeletonLoader width={(width - 52) / 2} height={100} borderRadius={16} />
+            </>
+          ) : (
+            <>
+              <FeedbackButton
+                onPress={() => console.log('Emergency call')}
+                style={styles.quickActionCard}
+              >
+                <View style={[styles.quickActionIcon, { backgroundColor: `${Colors.error}${Colors.opacity.light}` }]}>
+                  <Zap color={Colors.error} size={24} />
+                </View>
+                <Text style={styles.quickActionTitle}>Emergency Call</Text>
+              </FeedbackButton>
+              
+              <FeedbackButton
+                onPress={() => console.log('Log symptoms')}
+                style={styles.quickActionCard}
+              >
+                <View style={[styles.quickActionIcon, { backgroundColor: `${Colors.accent}${Colors.opacity.light}` }]}>
+                  <Activity color={Colors.accent} size={24} />
+                </View>
+                <Text style={styles.quickActionTitle}>Log Symptoms</Text>
+              </FeedbackButton>
+              
+              <FeedbackButton
+                onPress={() => console.log('Health goals')}
+                style={styles.quickActionCard}
+              >
+                <View style={[styles.quickActionIcon, { backgroundColor: `${Colors.success}${Colors.opacity.light}` }]}>
+                  <Award color={Colors.success} size={24} />
+                </View>
+                <Text style={styles.quickActionTitle}>Health Goals</Text>
+              </FeedbackButton>
+              
+              <FeedbackButton
+                onPress={() => console.log('Schedule visit')}
+                style={styles.quickActionCard}
+              >
+                <View style={[styles.quickActionIcon, { backgroundColor: `${Colors.warning}${Colors.opacity.light}` }]}>
+                  <Calendar color={Colors.warning} size={24} />
+                </View>
+                <Text style={styles.quickActionTitle}>Schedule Visit</Text>
+              </FeedbackButton>
+            </>
+          )}
+        </View>
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: Colors.background,
-    gap: 16,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: Colors.textSecondary,
-    fontWeight: '500',
-  },
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -761,11 +726,6 @@ const styles = StyleSheet.create({
     color: Colors.surface,
     fontSize: 12,
     fontWeight: '600',
-  },
-  switchModeButton: {
-    padding: 8,
-    backgroundColor: `${Colors.accent}${Colors.opacity.light}`,
-    borderRadius: 20,
   },
   section: {
     paddingHorizontal: 20,
