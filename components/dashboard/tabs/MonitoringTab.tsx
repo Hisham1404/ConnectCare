@@ -47,7 +47,7 @@ export default function MonitoringTab({
             onPress={onToggleMonitoring}
           >
             {isMonitoring ? (
-              <Pause color="#ffffff\" size={14} />
+              <Pause color="#ffffff" size={14} />
             ) : (
               <Play color="#ffffff" size={14} />
             )}
