@@ -797,8 +797,7 @@ export default function DailyCheckinScreen() {
           </View>
           
           <FeedbackButton 
-            onPress={() => setIsSpeakerOn(!isSpeakerOn)}
-            style={styles.speakerButton}
+            disabled={conversationState !== 'idle'}
           >
             {isSpeakerOn ? (
               <Volume2 color={Colors.accent} size={20} />
