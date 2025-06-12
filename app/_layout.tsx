@@ -18,8 +18,9 @@ export default function RootLayout() {
   // Handle navigation based on authentication status
   useEffect(() => {
     if (!authLoading && initialLoad) {
+      console.log('🔍 Navigation check:', { user: !!user, profile: !!profile, role: profile?.role });
+      
       setInitialLoad(false);
-      setNavigationReady(true);
       
       // Add a small delay to ensure smooth navigation
       setTimeout(() => {
@@ -30,27 +31,57 @@ export default function RootLayout() {
             case 'admin':
             case 'nurse':
               console.log(`👨‍⚕️ Redirecting ${profile.role} to dashboard`);
-              router.replace('/dashboard');
+              try {
+                router.replace('/dashboard');
+                setNavigationReady(true);
+              } catch (error) {
+                console.error('❌ Dashboard navigation failed:', error);
+                // Fallback to welcome page if dashboard fails
+                router.replace('/');
+                setNavigationReady(true);
+              }
               break;
               
             case 'patient':
               console.log('🏥 Redirecting patient to tabs');
-              router.replace('/(tabs)');
+              try {
+                router.replace('/(tabs)');
+                setNavigationReady(true);
+              } catch (error) {
+                console.error('❌ Tabs navigation failed:', error);
+                router.replace('/');
+                setNavigationReady(true);
+              }
               break;
               
             default:
               console.log('🔓 Unknown role, redirecting to welcome');
               router.replace('/');
+              setNavigationReady(true);
               break;
           }
         } else {
           // User is not authenticated or no profile, show welcome screen
           console.log('🔓 No user/profile found, redirecting to welcome');
           router.replace('/');
+          setNavigationReady(true);
         }
-      }, 100);
+      }, 200); // Slightly longer delay for stability
     }
   }, [user, profile, authLoading, initialLoad]);
+
+  // Add timeout fallback to prevent infinite loading
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (!navigationReady && !authLoading) {
+        console.warn('⚠️ Navigation timeout - forcing fallback');
+        router.replace('/');
+        setNavigationReady(true);
+      }
+    }, 5000); // 5 second timeout
+
+    return () => clearTimeout(timeout);
+  }, [navigationReady, authLoading]);
 
   // Show loading screen while checking authentication or during initial navigation
   if (authLoading || initialLoad || !navigationReady) {
