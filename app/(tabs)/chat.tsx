@@ -25,20 +25,19 @@ interface Message {
   duration?: number;
 }
 
+type ConversationState = 'idle' | 'listening' | 'processing' | 'speaking' | 'completed';
+
 export default function DailyCheckinScreen() {
-  const [isRecording, setIsRecording] = useState(false);
+  const [conversationState, setConversationState] = useState<ConversationState>('idle');
   const [isVoiceMode, setIsVoiceMode] = useState(false);
   const [isSpeakerOn, setIsSpeakerOn] = useState(true);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [showTextInput, setShowTextInput] = useState(false);
   const [textInput, setTextInput] = useState('');
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [sound, setSound] = useState<Audio.Sound | null>(null);
-  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [conversationHistory, setConversationHistory] = useState<Message[]>([]);
   
   const recordingTimer = useRef<NodeJS.Timeout>();
@@ -48,6 +47,7 @@ export default function DailyCheckinScreen() {
   const fadeAnimation = useRef(new Animated.Value(1)).current;
   const voiceModeAnimation = useRef(new Animated.Value(0)).current;
   const voiceOrbAnimation = useRef(new Animated.Value(1)).current;
+  const waveformAnimations = useRef(Array.from({ length: 5 }, () => new Animated.Value(0.3))).current;
 
   const questions = [
     "Good morning! How are you feeling today?",
@@ -79,12 +79,7 @@ export default function DailyCheckinScreen() {
 
     return () => {
       // Cleanup audio resources
-      if (recording) {
-        recording.stopAndUnloadAsync();
-      }
-      if (sound) {
-        sound.unloadAsync();
-      }
+      cleanupAudio();
     };
   }, []);
 
@@ -107,66 +102,117 @@ export default function DailyCheckinScreen() {
   }, [isVoiceMode]);
 
   useEffect(() => {
-    if (isRecording) {
-      // Voice orb animation during recording
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(voiceOrbAnimation, {
-            toValue: 1.2,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(voiceOrbAnimation, {
-            toValue: 0.8,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
+    // Handle different conversation states with appropriate animations
+    switch (conversationState) {
+      case 'listening':
+        startListeningAnimations();
+        break;
+      case 'processing':
+        startProcessingAnimations();
+        break;
+      case 'speaking':
+        startSpeakingAnimations();
+        break;
+      case 'idle':
+      case 'completed':
+        stopAllAnimations();
+        break;
+    }
+  }, [conversationState]);
 
-      // Ripple effect
-      Animated.loop(
-        Animated.timing(rippleAnimation, {
-          toValue: 1,
-          duration: 2000,
+  const startListeningAnimations = () => {
+    // Voice orb pulsing animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(voiceOrbAnimation, {
+          toValue: 1.1,
+          duration: 800,
           useNativeDriver: true,
-        })
-      ).start();
-    } else {
-      voiceOrbAnimation.setValue(1);
-      rippleAnimation.setValue(0);
-    }
-  }, [isRecording]);
+        }),
+        Animated.timing(voiceOrbAnimation, {
+          toValue: 0.9,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
 
-  useEffect(() => {
-    if (isProcessing) {
+    // Ripple effect
+    Animated.loop(
+      Animated.timing(rippleAnimation, {
+        toValue: 1,
+        duration: 2000,
+        useNativeDriver: true,
+      })
+    ).start();
+
+    // Waveform animation
+    startWaveformAnimation();
+  };
+
+  const startProcessingAnimations = () => {
+    // Gentle pulsing for processing
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(fadeAnimation, {
+          toValue: 0.6,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnimation, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  };
+
+  const startSpeakingAnimations = () => {
+    // Different animation for AI speaking
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(voiceOrbAnimation, {
+          toValue: 1.05,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.timing(voiceOrbAnimation, {
+          toValue: 0.95,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+
+    // Speaking waveform
+    startWaveformAnimation(true);
+  };
+
+  const startWaveformAnimation = (isSpeaking = false) => {
+    waveformAnimations.forEach((animation, index) => {
       Animated.loop(
         Animated.sequence([
-          Animated.timing(fadeAnimation, {
-            toValue: 0.5,
-            duration: 1000,
-            useNativeDriver: true,
+          Animated.timing(animation, {
+            toValue: Math.random() * 0.8 + 0.2,
+            duration: 300 + (index * 100),
+            useNativeDriver: false,
           }),
-          Animated.timing(fadeAnimation, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: true,
+          Animated.timing(animation, {
+            toValue: 0.1,
+            duration: 300 + (index * 100),
+            useNativeDriver: false,
           }),
         ])
       ).start();
-    } else {
-      fadeAnimation.setValue(1);
-    }
-  }, [isProcessing]);
+    });
+  };
 
-  const handleStartCheckin = () => {
-    setHasStarted(true);
-    setIsVoiceMode(true);
-    
-    // Start the conversation with AI greeting
-    if (isSpeakerOn) {
-      handleTextToSpeech(questions[currentQuestion]);
-    }
+  const stopAllAnimations = () => {
+    voiceOrbAnimation.setValue(1);
+    rippleAnimation.setValue(0);
+    fadeAnimation.setValue(1);
+    waveformAnimations.forEach(animation => animation.setValue(0.3));
   };
 
   const configureAudio = async () => {
@@ -175,10 +221,39 @@ export default function DailyCheckinScreen() {
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
+        staysActiveInBackground: false,
+        shouldDuckAndroid: true,
+        playThroughEarpieceAndroid: false,
       });
     } catch (error) {
       console.error('Failed to configure audio:', error);
     }
+  };
+
+  const cleanupAudio = async () => {
+    try {
+      if (recording) {
+        await recording.stopAndUnloadAsync();
+      }
+      if (sound) {
+        await sound.unloadAsync();
+      }
+    } catch (error) {
+      console.error('Error cleaning up audio:', error);
+    }
+  };
+
+  const handleStartCheckin = () => {
+    setHasStarted(true);
+    setIsVoiceMode(true);
+    setConversationState('idle');
+    
+    // Start the conversation with AI greeting
+    setTimeout(() => {
+      if (isSpeakerOn) {
+        handleTextToSpeech(questions[currentQuestion]);
+      }
+    }, 500);
   };
 
   const startRecording = async () => {
@@ -186,6 +261,13 @@ export default function DailyCheckinScreen() {
       if (Platform.OS === 'web') {
         console.log('Web recording not supported in this demo');
         return null;
+      }
+
+      // Stop any playing audio first
+      if (sound) {
+        await sound.stopAsync();
+        await sound.unloadAsync();
+        setSound(null);
       }
 
       const { recording } = await Audio.Recording.createAsync(
@@ -215,19 +297,20 @@ export default function DailyCheckinScreen() {
 
   const playAudioFromBase64 = async (base64Audio: string) => {
     try {
-      setIsPlayingAudio(true);
+      // Stop any existing audio first
+      if (sound) {
+        await sound.stopAsync();
+        await sound.unloadAsync();
+      }
+
+      setConversationState('speaking');
       
       // Create audio URI from base64
       const audioUri = `data:audio/mpeg;base64,${base64Audio}`;
       
-      // Unload previous sound if exists
-      if (sound) {
-        await sound.unloadAsync();
-      }
-
       const { sound: newSound } = await Audio.Sound.createAsync(
         { uri: audioUri },
-        { shouldPlay: true }
+        { shouldPlay: true, volume: 1.0 }
       );
       
       setSound(newSound);
@@ -235,13 +318,14 @@ export default function DailyCheckinScreen() {
       // Set up playback status update
       newSound.setOnPlaybackStatusUpdate((status) => {
         if (status.isLoaded && status.didJustFinish) {
-          setIsPlayingAudio(false);
+          setConversationState('idle');
+          setSound(null);
         }
       });
       
     } catch (error) {
       console.error('Failed to play audio:', error);
-      setIsPlayingAudio(false);
+      setConversationState('idle');
     }
   };
 
@@ -277,6 +361,7 @@ export default function DailyCheckinScreen() {
       
       if (data.error) {
         console.error('TTS Error:', data.error);
+        setConversationState('idle');
         return;
       }
 
@@ -285,6 +370,7 @@ export default function DailyCheckinScreen() {
       }
     } catch (error) {
       console.error('Failed to convert text to speech:', error);
+      setConversationState('idle');
     }
   };
 
@@ -325,6 +411,7 @@ export default function DailyCheckinScreen() {
     setConversationHistory(prev => [...prev, userMessage]);
     
     // Generate AI response
+    setConversationState('processing');
     const aiResponseText = await generateAIResponse(userInput);
     
     // Add AI message to conversation history
@@ -341,30 +428,44 @@ export default function DailyCheckinScreen() {
     // Convert AI response to speech if speaker is on
     if (isSpeakerOn) {
       await handleTextToSpeech(aiResponseText);
-    }
-    
-    // Move to next question or complete check-in
-    if (currentQuestion < questions.length - 1) {
+      
+      // Wait for speech to complete before moving to next question
       setTimeout(() => {
-        setCurrentQuestion(prev => prev + 1);
-        // Ask the next question
-        if (isSpeakerOn) {
-          handleTextToSpeech(questions[currentQuestion + 1]);
+        if (currentQuestion < questions.length - 1) {
+          setCurrentQuestion(prev => prev + 1);
+          // Ask the next question after a brief pause
+          setTimeout(() => {
+            if (isSpeakerOn) {
+              handleTextToSpeech(questions[currentQuestion + 1]);
+            }
+          }, 1000);
+        } else {
+          // Complete the check-in
+          setTimeout(() => {
+            completeCheckin();
+          }, 1000);
         }
       }, 2000);
     } else {
-      // Complete the check-in
-      setTimeout(() => {
+      // If speaker is off, move to next question immediately
+      if (currentQuestion < questions.length - 1) {
+        setCurrentQuestion(prev => prev + 1);
+      } else {
         completeCheckin();
-      }, 2000);
+      }
     }
   };
 
   const handleVoiceRecording = async () => {
+    // Prevent interaction during speaking or processing
+    if (conversationState === 'speaking' || conversationState === 'processing') {
+      return;
+    }
+
     if (Platform.OS === 'web') {
       console.log('Voice recording placeholder - would work on mobile devices');
       // For web demo, simulate the voice interaction
-      setIsRecording(true);
+      setConversationState('listening');
       setRecordingDuration(0);
       
       recordingTimer.current = setInterval(() => {
@@ -373,17 +474,15 @@ export default function DailyCheckinScreen() {
       
       // Simulate recording for 3 seconds
       setTimeout(() => {
-        setIsRecording(false);
+        setConversationState('processing');
         if (recordingTimer.current) {
           clearInterval(recordingTimer.current);
         }
-        setIsProcessing(true);
         
         // Simulate STT processing
         setTimeout(async () => {
           const simulatedUserInput = `I'm feeling much better today, thank you for asking.`;
           await processUserResponse(simulatedUserInput);
-          setIsProcessing(false);
           setRecordingDuration(0);
         }, 2000);
       }, 3000);
@@ -391,9 +490,9 @@ export default function DailyCheckinScreen() {
       return;
     }
     
-    if (!isRecording) {
+    if (conversationState === 'idle') {
       // Start recording
-      setIsRecording(true);
+      setConversationState('listening');
       setRecordingDuration(0);
       
       const recordingInstance = await startRecording();
@@ -401,14 +500,12 @@ export default function DailyCheckinScreen() {
       recordingTimer.current = setInterval(() => {
         setRecordingDuration(prev => prev + 1);
       }, 1000);
-    } else {
+    } else if (conversationState === 'listening') {
       // Stop recording
-      setIsRecording(false);
+      setConversationState('processing');
       if (recordingTimer.current) {
         clearInterval(recordingTimer.current);
       }
-      
-      setIsProcessing(true);
       
       const audioUri = await stopRecording();
       
@@ -420,29 +517,25 @@ export default function DailyCheckinScreen() {
         await processUserResponse(transcribedText);
       }
       
-      setIsProcessing(false);
       setRecordingDuration(0);
     }
   };
 
   const handleTextSubmit = async () => {
-    if (textInput.trim()) {
-      setIsProcessing(true);
-      
+    if (textInput.trim() && conversationState === 'idle') {
       const userInput = textInput.trim();
       setTextInput('');
       
       // Process the user's text response
       await processUserResponse(userInput);
       
-      setIsProcessing(false);
       setShowTextInput(false);
     }
   };
 
   const completeCheckin = async () => {
     try {
-      setIsSubmitting(true);
+      setConversationState('completed');
       console.log('💾 Completing daily check-in');
 
       // Simulate check-in completion
@@ -469,60 +562,72 @@ export default function DailyCheckinScreen() {
       
       // Reset after a delay
       setTimeout(() => {
-        setIsVoiceMode(false);
-        setHasStarted(false);
-        setCurrentQuestion(0);
-        setConversationHistory([]);
+        resetToInitialState();
       }, 5000);
     } catch (error) {
       console.error('❌ Error completing check-in:', error);
-    } finally {
-      setIsSubmitting(false);
+    }
+  };
+
+  const resetToInitialState = () => {
+    setIsVoiceMode(false);
+    setHasStarted(false);
+    setCurrentQuestion(0);
+    setConversationHistory([]);
+    setConversationState('idle');
+    setRecordingDuration(0);
+    setShowTextInput(false);
+    setTextInput('');
+    
+    // Stop any playing audio
+    if (sound) {
+      sound.stopAsync();
+    }
+    
+    // Clear timers
+    if (recordingTimer.current) {
+      clearInterval(recordingTimer.current);
     }
   };
 
   const exitVoiceMode = () => {
-    setIsVoiceMode(false);
-    setIsRecording(false);
-    setHasStarted(false);
-    if (recordingTimer.current) {
-      clearInterval(recordingTimer.current);
-    }
-    setRecordingDuration(0);
-    setCurrentQuestion(0);
-    setIsProcessing(false);
-    setIsSubmitting(false);
-    setConversationHistory([]);
-    
-    // Stop any playing audio
-    if (sound) {
-      sound.stopAsync();
-      setIsPlayingAudio(false);
-    }
-  };
-
-  const resetCheckin = () => {
-    setCurrentQuestion(0);
-    setIsRecording(false);
-    setIsProcessing(false);
-    setShowTextInput(false);
-    setTextInput('');
-    setRecordingDuration(0);
-    setIsVoiceMode(false);
-    setHasStarted(false);
-    setConversationHistory([]);
-    
-    // Stop any playing audio
-    if (sound) {
-      sound.stopAsync();
-      setIsPlayingAudio(false);
-    }
+    resetToInitialState();
   };
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const getOrbColor = () => {
+    switch (conversationState) {
+      case 'listening':
+        return Colors.error;
+      case 'processing':
+        return Colors.warning;
+      case 'speaking':
+        return Colors.accent;
+      case 'completed':
+        return Colors.success;
+      default:
+        return Colors.primary;
+    }
+  };
+
+  const getStatusText = () => {
+    switch (conversationState) {
+      case 'listening':
+        return `Recording... ${formatDuration(recordingDuration)}`;
+      case 'processing':
+        return 'Processing your response...';
+      case 'speaking':
+        return 'AI is speaking...';
+      case 'completed':
+        return 'Check-in completed!';
+      default:
+        return 'Tap to speak your answer';
+    }
   };
 
   // Voice Mode Full Screen Interface
@@ -548,7 +653,7 @@ export default function DailyCheckinScreen() {
         {/* Voice Animation Container */}
         <View style={styles.voiceModeContent}>
           {/* Ripple Effects */}
-          {(isRecording || isPlayingAudio) && (
+          {(conversationState === 'listening' || conversationState === 'speaking') && (
             <>
               {[...Array(3)].map((_, i) => (
                 <Animated.View 
@@ -558,6 +663,7 @@ export default function DailyCheckinScreen() {
                     {
                       width: 200 + (i * 60),
                       height: 200 + (i * 60),
+                      borderColor: `${getOrbColor()}30`,
                       opacity: rippleAnimation.interpolate({
                         inputRange: [0, 1],
                         outputRange: [0.6 - (i * 0.2), 0],
@@ -587,18 +693,19 @@ export default function DailyCheckinScreen() {
               onPress={handleVoiceRecording}
               style={[
                 styles.voiceOrbButton,
-                isRecording && styles.recordingOrb,
-                isPlayingAudio && styles.playingOrb,
+                { backgroundColor: getOrbColor() }
               ]}
               hapticFeedback={true}
-              disabled={isPlayingAudio || isSubmitting}
+              disabled={conversationState === 'speaking' || conversationState === 'processing'}
             >
-              {isProcessing || isSubmitting ? (
+              {conversationState === 'processing' ? (
                 <Heart color={Colors.surface} size={48} />
-              ) : isPlayingAudio ? (
+              ) : conversationState === 'speaking' ? (
                 <Volume2 color={Colors.surface} size={48} />
-              ) : isRecording ? (
+              ) : conversationState === 'listening' ? (
                 <MicOff color={Colors.surface} size={48} />
+              ) : conversationState === 'completed' ? (
+                <CheckCircle color={Colors.surface} size={48} />
               ) : (
                 <Mic color={Colors.surface} size={48} />
               )}
@@ -611,27 +718,23 @@ export default function DailyCheckinScreen() {
             { opacity: fadeAnimation }
           ]}>
             <Text style={styles.voiceStatusText}>
-              {isProcessing ? 'Processing your response...' :
-               isSubmitting ? 'Completing check-in...' :
-               isPlayingAudio ? 'AI is speaking...' :
-               isRecording ? `Recording... ${formatDuration(recordingDuration)}` :
-               'Tap to speak your answer'}
+              {getStatusText()}
             </Text>
             
             {/* Voice Waveform */}
-            {(isRecording || isPlayingAudio) && (
+            {(conversationState === 'listening' || conversationState === 'speaking') && (
               <View style={styles.voiceWaveform}>
-                {[...Array(5)].map((_, i) => (
+                {waveformAnimations.map((animation, i) => (
                   <Animated.View 
                     key={i} 
                     style={[
                       styles.voiceWaveBar,
                       {
-                        height: rippleAnimation.interpolate({
+                        height: animation.interpolate({
                           inputRange: [0, 1],
-                          outputRange: [6, Math.random() * 30 + 10],
+                          outputRange: [6, 40],
                         }),
-                        backgroundColor: isPlayingAudio ? Colors.accent : Colors.primary,
+                        backgroundColor: conversationState === 'speaking' ? Colors.accent : getOrbColor(),
                       }
                     ]} 
                   />
@@ -671,7 +774,7 @@ export default function DailyCheckinScreen() {
     );
   }
 
-  // Initial Start Check-in Interface - REDESIGNED
+  // Initial Start Check-in Interface
   if (!hasStarted) {
     return (
       <View style={styles.container}>
@@ -696,7 +799,7 @@ export default function DailyCheckinScreen() {
           </FeedbackButton>
         </View>
 
-        {/* Main Content - Redesigned for Focus */}
+        {/* Main Content */}
         <View style={styles.mainContentContainer}>
           {/* Central Focus Area */}
           <View style={styles.centralFocusArea}>
@@ -829,11 +932,11 @@ export default function DailyCheckinScreen() {
           {currentQuestion < questions.length ? (
             <FeedbackButton
               onPress={handleVoiceRecording}
-              disabled={isProcessing || isSubmitting}
+              disabled={conversationState !== 'idle'}
               style={[
                 styles.mainVoiceButton,
-                isRecording && styles.recordingButton,
-                (isProcessing || isSubmitting) && styles.processingButton
+                conversationState === 'listening' && styles.recordingButton,
+                conversationState !== 'idle' && styles.busyButton
               ]}
               hapticFeedback={true}
             >
@@ -845,7 +948,7 @@ export default function DailyCheckinScreen() {
                   ] 
                 }
               ]}>
-                {isProcessing || isSubmitting ? (
+                {conversationState === 'processing' ? (
                   <Heart color={Colors.surface} size={32} />
                 ) : (
                   <Mic color={Colors.surface} size={32} />
@@ -861,7 +964,7 @@ export default function DailyCheckinScreen() {
           {/* Status Text */}
           <Text style={styles.statusText}>
             {currentQuestion < questions.length 
-              ? (isSubmitting ? 'Saving your check-in...' : 'Tap to speak your answer')
+              ? getStatusText()
               : 'Check-in completed successfully!'}
           </Text>
         </View>
@@ -872,16 +975,16 @@ export default function DailyCheckinScreen() {
             <FeedbackButton
               onPress={() => setShowTextInput(!showTextInput)}
               style={styles.actionButton}
-              disabled={isSubmitting}
+              disabled={conversationState !== 'idle'}
             >
               <Type color={Colors.textSecondary} size={20} />
               <Text style={styles.actionButtonText}>Type Instead</Text>
             </FeedbackButton>
 
             <FeedbackButton
-              onPress={resetCheckin}
+              onPress={resetToInitialState}
               style={styles.actionButton}
-              disabled={isSubmitting}
+              disabled={conversationState !== 'idle'}
             >
               <Clock color={Colors.textSecondary} size={20} />
               <Text style={styles.actionButtonText}>Start Over</Text>
@@ -903,15 +1006,15 @@ export default function DailyCheckinScreen() {
             />
             <FeedbackButton
               onPress={handleTextSubmit}
-              disabled={!textInput.trim() || isSubmitting}
+              disabled={!textInput.trim() || conversationState !== 'idle'}
               style={[
                 styles.submitButton, 
-                textInput.trim() && !isSubmitting && styles.submitButtonActive
+                textInput.trim() && conversationState === 'idle' && styles.submitButtonActive
               ]}
               hapticFeedback={true}
             >
               <Text style={styles.submitButtonText}>
-                {isSubmitting ? 'Submitting...' : 'Submit'}
+                {conversationState === 'processing' ? 'Processing...' : 'Submit'}
               </Text>
             </FeedbackButton>
           </Animated.View>
@@ -1065,7 +1168,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 
-  // EXISTING STYLES (unchanged)
+  // EXISTING STYLES (updated)
   mainContent: {
     flex: 1,
     paddingHorizontal: 24,
@@ -1151,9 +1254,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.error,
     shadowColor: Colors.error,
   },
-  processingButton: {
-    backgroundColor: Colors.accent,
-    shadowColor: Colors.accent,
+  busyButton: {
+    opacity: 0.7,
   },
   voiceButtonInner: {
     justifyContent: 'center',
@@ -1227,7 +1329,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Voice Mode Styles
+  // Voice Mode Styles (updated)
   voiceModeContainer: {
     position: 'absolute',
     top: 0,
@@ -1260,7 +1362,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     borderRadius: 1000,
     borderWidth: 2,
-    borderColor: `${Colors.primary}${Colors.opacity.light}`,
   },
   voiceOrb: {
     marginBottom: 40,
@@ -1269,7 +1370,6 @@ const styles = StyleSheet.create({
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: Colors.primary,
@@ -1277,14 +1377,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4,
     shadowRadius: 24,
     elevation: 16,
-  },
-  recordingOrb: {
-    backgroundColor: Colors.error,
-    shadowColor: Colors.error,
-  },
-  playingOrb: {
-    backgroundColor: Colors.accent,
-    shadowColor: Colors.accent,
   },
   voiceStatusContainer: {
     alignItems: 'center',
@@ -1301,11 +1393,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    height: 50,
   },
   voiceWaveBar: {
     width: 4,
-    backgroundColor: Colors.primary,
     borderRadius: 2,
+    minHeight: 6,
   },
   voiceQuestionContainer: {
     backgroundColor: `${Colors.surface}${Colors.opacity.medium}`,
