@@ -360,6 +360,30 @@ export default function DailyCheckinScreen() {
     }
   };
 
+  const exitVoiceMode = () => {
+    setIsVoiceMode(false);
+    setIsRecording(false);
+    setHasStarted(false);
+    if (recordingTimer.current) {
+      clearInterval(recordingTimer.current);
+    }
+    setRecordingDuration(0);
+    setCurrentQuestion(0);
+    setIsProcessing(false);
+    setIsSubmitting(false);
+  };
+
+  const resetCheckin = () => {
+    setCurrentQuestion(0);
+    setIsRecording(false);
+    setIsProcessing(false);
+    setShowTextInput(false);
+    setTextInput('');
+    setRecordingDuration(0);
+    setIsVoiceMode(false);
+    setHasStarted(false);
+  };
+
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -935,210 +959,4 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     marginBottom: 8,
   },
-  progressFill: {
-    height: '100%',
-    backgroundColor: Colors.primary,
-    borderRadius: 3,
-  },
-  progressText: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    fontWeight: '500',
-  },
-  voiceInterface: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    position: 'relative',
-  },
-  mainVoiceButton: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: Colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 12,
-    marginBottom: 24,
-  },
-  recordingButton: {
-    backgroundColor: Colors.error,
-    shadowColor: Colors.error,
-  },
-  processingButton: {
-    backgroundColor: Colors.success,
-    shadowColor: Colors.success,
-  },
-  voiceButtonInner: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  statusText: {
-    fontSize: 16,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    fontWeight: '500',
-    marginBottom: 16,
-  },
-  completionIcon: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-  },
-  bottomActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingBottom: 40,
-  },
-  actionButton: {
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: Colors.surface,
-    borderRadius: 16,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-    minWidth: 120,
-  },
-  actionButtonText: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    fontWeight: '600',
-  },
-  textInputContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 24,
-    right: 24,
-    backgroundColor: Colors.surface,
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  textInput: {
-    backgroundColor: Colors.background,
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: Colors.textPrimary,
-    minHeight: 80,
-    textAlignVertical: 'top',
-    marginBottom: 16,
-  },
-  submitButton: {
-    backgroundColor: Colors.textTertiary,
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  submitButtonActive: {
-    backgroundColor: Colors.primary,
-  },
-  submitButtonText: {
-    color: Colors.surface,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  // Voice Mode Styles
-  voiceModeContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 1000,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  exitButton: {
-    position: 'absolute',
-    top: 60,
-    right: 24,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1001,
-  },
-  voiceModeContent: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    width: '100%',
-  },
-  voiceRipple: {
-    position: 'absolute',
-    borderRadius: 1000,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  voiceOrb: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    backgroundColor: Colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.4,
-    shadowRadius: 24,
-    elevation: 16,
-    marginBottom: 40,
-  },
-  voiceOrbButton: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 80,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  voiceStatusContainer: {
-    alignItems: 'center',
-    marginBottom: 60,
-  },
-  voiceStatusText: {
-    fontSize: 18,
-    color: Colors.surface,
-    textAlign: 'center',
-    fontWeight: '600',
-    marginBottom: 20,
-  },
-  voiceWaveform: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    height: 40,
-  },
-  voiceWaveBar: {
-    width: 4,
-    backgroundColor: Colors.surface,
-    borderRadius: 2,
-    opacity: 0.7,
-  },
-  voiceQuestionContainer: {
-    paddingHorizontal: 40,
-    alignItems: 'center',
-  },
-  voiceQuestionText: {
-    fontSize: 20,
-    color: Colors.surface,
-    textAlign: 'center',
-    lineHeight: 28,
-    fontWeight: '500',
-  },
-});
+  progress
