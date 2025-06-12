@@ -29,7 +29,7 @@ export async function POST(request: Request) {
 
     if (action === 'text-to-speech') {
       // Convert text to speech using ElevenLabs
-      const voiceId = 'pNInz6obpgDQGcFmaJgB'; // Adam voice - you can change this
+      const voiceId = 'pNInz6obpgDQGcFmaJgB'; // Adam voice - this serves as the "agent ID" for ElevenLabs, determining the specific voice and persona used for text-to-speech
       const ttsResponse = await fetch(
         `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
         {

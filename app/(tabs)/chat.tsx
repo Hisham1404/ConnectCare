@@ -16,6 +16,22 @@ import FeedbackButton from '../../components/ui/FeedbackButton';
 
 const { width, height } = Dimensions.get('window');
 
+// System prompt that defines the AI's persona and guidelines
+// This would be used in a real LLM integration to guide the AI's responses
+const systemPrompt = `You are a compassionate AI health assistant for ConnectCare AI, specializing in post-surgery patient monitoring and daily check-ins. Your role is to:
+
+- Conduct empathetic daily health assessments with patients recovering from surgery
+- Ask clear, medically-relevant questions about pain levels, medication adherence, and symptoms
+- Provide supportive and encouraging responses to patient concerns
+- Maintain a professional yet caring and warm tone throughout the conversation
+- Focus specifically on recovery progress, symptom monitoring, and overall well-being
+- Acknowledge patient responses with understanding and provide gentle guidance
+- Keep responses concise but meaningful, suitable for voice conversation
+- Show genuine concern for the patient's comfort and recovery journey
+- Escalate any concerning symptoms appropriately while remaining calm and reassuring
+
+Remember: You are speaking to patients who may be in discomfort or anxiety about their recovery. Always be patient, understanding, and encouraging while gathering important health information.`;
+
 interface Message {
   id: string;
   text: string;
@@ -320,6 +336,14 @@ export default function DailyCheckinScreen() {
         if (status.isLoaded && status.didJustFinish) {
           setConversationState('idle');
           setSound(null);
+          
+          // Move to next question after AI finishes speaking
+          if (currentQuestion < questions.length - 1) {
+            setCurrentQuestion(prev => prev + 1);
+          } else {
+            // Complete the check-in if this was the last question
+            completeCheckin();
+          }
         }
       });
       
@@ -330,6 +354,11 @@ export default function DailyCheckinScreen() {
   };
 
   const generateAIResponse = async (userInput: string): Promise<string> => {
+    // In a real implementation, this is where the systemPrompt would be used
+    // to guide the LLM's response generation. The systemPrompt would be sent
+    // along with the user's input to ensure the AI maintains its persona and
+    // follows the defined guidelines for compassionate healthcare assistance.
+    
     // Simulate AI processing with contextual responses based on current question
     await new Promise(resolve => setTimeout(resolve, 1000));
     
@@ -428,24 +457,8 @@ export default function DailyCheckinScreen() {
     // Convert AI response to speech if speaker is on
     if (isSpeakerOn) {
       await handleTextToSpeech(aiResponseText);
-      
-      // Wait for speech to complete before moving to next question
-      setTimeout(() => {
-        if (currentQuestion < questions.length - 1) {
-          setCurrentQuestion(prev => prev + 1);
-          // Ask the next question after a brief pause
-          setTimeout(() => {
-            if (isSpeakerOn) {
-              handleTextToSpeech(questions[currentQuestion + 1]);
-            }
-          }, 1000);
-        } else {
-          // Complete the check-in
-          setTimeout(() => {
-            completeCheckin();
-          }, 1000);
-        }
-      }, 2000);
+      // Note: Question progression now happens in playAudioFromBase64 
+      // when the AI finishes speaking, ensuring proper turn-based flow
     } else {
       // If speaker is off, move to next question immediately
       if (currentQuestion < questions.length - 1) {
@@ -457,11 +470,6 @@ export default function DailyCheckinScreen() {
   };
 
   const handleVoiceRecording = async () => {
-    // Prevent interaction during speaking or processing
-    if (conversationState === 'speaking' || conversationState === 'processing') {
-      return;
-    }
-
     if (Platform.OS === 'web') {
       console.log('Voice recording placeholder - would work on mobile devices');
       // For web demo, simulate the voice interaction
@@ -522,7 +530,7 @@ export default function DailyCheckinScreen() {
   };
 
   const handleTextSubmit = async () => {
-    if (textInput.trim() && conversationState === 'idle') {
+    if (textInput.trim()) {
       const userInput = textInput.trim();
       setTextInput('');
       
@@ -696,6 +704,7 @@ export default function DailyCheckinScreen() {
                 { backgroundColor: getOrbColor() }
               ]}
               hapticFeedback={true}
+              disabled={conversationState === 'speaking' || conversationState === 'processing'}
               disabled={conversationState === 'speaking' || conversationState === 'processing'}
             >
               {conversationState === 'processing' ? (
@@ -933,6 +942,7 @@ export default function DailyCheckinScreen() {
             <FeedbackButton
               onPress={handleVoiceRecording}
               disabled={conversationState !== 'idle'}
+              disabled={conversationState !== 'idle'}
               style={[
                 styles.mainVoiceButton,
                 conversationState === 'listening' && styles.recordingButton,
@@ -1006,6 +1016,7 @@ export default function DailyCheckinScreen() {
             />
             <FeedbackButton
               onPress={handleTextSubmit}
+              disabled={!textInput.trim() || conversationState !== 'idle'}
               disabled={!textInput.trim() || conversationState !== 'idle'}
               style={[
                 styles.submitButton, 
