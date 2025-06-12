@@ -366,27 +366,6 @@ export default function DailyCheckinScreen() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const resetCheckin = () => {
-    setCurrentQuestion(0);
-    setIsRecording(false);
-    setIsProcessing(false);
-    setShowTextInput(false);
-    setTextInput('');
-    setRecordingDuration(0);
-    setIsVoiceMode(false);
-    setHasStarted(false);
-  };
-
-  const exitVoiceMode = () => {
-    setIsVoiceMode(false);
-    setIsRecording(false);
-    setHasStarted(false);
-    if (recordingTimer.current) {
-      clearInterval(recordingTimer.current);
-    }
-    setRecordingDuration(0);
-  };
-
   // Voice Mode Full Screen Interface
   if (isVoiceMode) {
     return (
