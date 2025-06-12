@@ -1,11 +1,10 @@
-import { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useAuth } from '../hooks/useAuth';
-import { DatabaseService, Doctor, Patient } from '../lib/database';
+import { DatabaseService } from '../lib/database';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
-import { router } from 'expo-router';
 
 // Import components
 import DashboardHeader from '../components/dashboard/DashboardHeader';
@@ -17,7 +16,7 @@ import ReportsTab from '../components/dashboard/tabs/ReportsTab';
 import SettingsTab from '../components/dashboard/tabs/SettingsTab';
 
 export default function DoctorDashboard() {
-  const { profile, switchToPatientMode, error: authError } = useAuth();
+  const { profile, switchToPatientMode } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,21 +24,19 @@ export default function DoctorDashboard() {
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('overview');
   const [isMonitoring, setIsMonitoring] = useState(false);
-  const [selectedPatientForMonitoring, setSelectedPatientForMonitoring] = useState<string | null>(null);
+  const [selectedPatientForMonitoring, setSelectedPatientForMonitoring] = useState('patient-1');
   const [realtimeChannel, setRealtimeChannel] = useState<RealtimeChannel | null>(null);
 
-  // Initialize state with default values
+  // Real data state
   const [dashboardStats, setDashboardStats] = useState({
-    totalPatients: 0,
-    criticalCases: 0,
-    stablePatients: 0,
-    pendingReviews: 0,
-    dailyCheckins: 0,
-    activeMonitoring: 0
+    totalPatients: 12,
+    criticalCases: 2,
+    stablePatients: 8,
+    pendingReviews: 3,
   });
 
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [doctorData, setDoctorData] = useState<Doctor | null>(null);
+  const [patients, setPatients] = useState<any[]>([]);
+  const [doctorData, setDoctorData] = useState<any>(null);
 
   const [todaysAppointments, setTodaysAppointments] = useState([
     {
@@ -70,21 +67,8 @@ export default function DoctorDashboard() {
 
   // Load dashboard data on component mount
   useEffect(() => {
-    if (profile) {
-      loadDashboardData();
-    } else if (!loading && !profile) {
-      // If auth loading is complete and there's no profile, redirect to login
-      router.replace('/auth/sign-in');
-    }
+    loadDashboardData();
   }, [profile]);
-
-  // Handle auth errors
-  useEffect(() => {
-    if (authError) {
-      setError(`Authentication error: ${authError}`);
-      setLoading(false);
-    }
-  }, [authError]);
 
   // Set up real-time subscriptions for doctors
   useEffect(() => {
@@ -110,7 +94,6 @@ export default function DoctorDashboard() {
   const loadDashboardData = async () => {
     if (!profile) {
       console.log('No profile available, skipping data load');
-      setLoading(false);
       return;
     }
 
@@ -120,78 +103,46 @@ export default function DoctorDashboard() {
       console.log('📊 Loading dashboard data for role:', profile.role);
 
       if (profile.role === 'doctor') {
-        // Step 1: Load doctor-specific data
+        // Load doctor-specific data
         const doctor = await DatabaseService.getDoctorByProfileId(profile.id);
-        
-        if (!doctor) {
+        if (doctor) {
+          setDoctorData(doctor);
+          
+          // Load doctor's patients
+          const doctorPatients = await DatabaseService.getPatientsByDoctorId(doctor.id);
+          setPatients(doctorPatients);
+          
+          // Load dashboard statistics
+          const stats = await DatabaseService.getDashboardStats(doctor.id);
+          setDashboardStats(stats);
+          
+          console.log('✅ Doctor dashboard data loaded:', {
+            patients: doctorPatients.length,
+            stats
+          });
+        } else {
           setError('Doctor profile not found. Please contact support.');
-          setLoading(false);
-          return;
         }
-        
-        setDoctorData(doctor);
-        
-        // Step 2: Load doctor's patients
-        const doctorPatients = await DatabaseService.getPatientsByDoctorId(doctor.id);
-        setPatients(doctorPatients);
-        
-        // Step 3: Set initial patient for monitoring if available
-        if (doctorPatients.length > 0 && !selectedPatientForMonitoring) {
-          setSelectedPatientForMonitoring(doctorPatients[0].id);
-        }
-        
-        // Step 4: Load dashboard statistics
-        const stats = await DatabaseService.getDashboardStats(doctor.id);
-        setDashboardStats({
-          ...dashboardStats,
-          totalPatients: stats.totalPatients || 0,
-          criticalCases: stats.criticalCases || 0,
-          stablePatients: stats.activeMonitoring || 0,
-          pendingReviews: stats.dailyCheckins || 0,
-          dailyCheckins: stats.dailyCheckins || 0,
-          activeMonitoring: stats.activeMonitoring || 0
-        });
-        
-        console.log('✅ Doctor dashboard data loaded:', {
-          patients: doctorPatients.length,
-          stats
-        });
       } else if (profile.role === 'patient') {
-        // Redirect to patient interface if they somehow access doctor dashboard
-        Alert.alert(
-          'Access Restricted',
-          'This dashboard is for healthcare providers only. Redirecting to patient interface.',
-          [
-            { 
-              text: 'OK', 
-              onPress: () => router.replace('/(tabs)') 
-            }
-          ]
-        );
-      } else if (profile.role === 'admin' || profile.role === 'nurse') {
-        // For admin/nurse roles, load all patients
-        const allPatients = await DatabaseService.getPatientsByDoctorId('');
-        setPatients(allPatients);
-        
-        // Load overall statistics
-        const stats = await DatabaseService.getDashboardStats();
-        setDashboardStats({
-          ...dashboardStats,
-          totalPatients: stats.totalPatients || 0,
-          criticalCases: stats.criticalCases || 0,
-          stablePatients: stats.activeMonitoring || 0,
-          pendingReviews: stats.dailyCheckins || 0,
-          dailyCheckins: stats.dailyCheckins || 0,
-          activeMonitoring: stats.activeMonitoring || 0
-        });
-      } else {
-        setError(`Unsupported user role: ${profile.role}`);
+        // Load patient-specific data
+        const patient = await DatabaseService.getPatientById(profile.id);
+        if (patient) {
+          // For patients, we might want to show their own data
+          setPatients([patient]);
+          
+          // Load patient's recent checkins
+          const recentCheckins = await DatabaseService.getRecentCheckins(patient.id);
+          console.log('✅ Patient data loaded:', {
+            checkins: recentCheckins.length
+          });
+        } else {
+          setError('Patient profile not found. Please contact support.');
+        }
       }
     } catch (error) {
       console.error('❌ Error loading dashboard data:', error);
       setError('Failed to load dashboard data. Please try again.');
     } finally {
-      // Always set loading to false, regardless of success or failure
       setLoading(false);
     }
   };
@@ -202,7 +153,7 @@ export default function DoctorDashboard() {
     // Update dashboard stats
     setDashboardStats(prev => ({
       ...prev,
-      dailyCheckins: (prev.dailyCheckins || 0) + 1
+      dailyCheckins: prev.dailyCheckins + 1
     }));
     
     // You could also show a notification to the user here
@@ -220,7 +171,6 @@ export default function DoctorDashboard() {
     return (
       <View style={styles.loadingContainer}>
         <LoadingSpinner size="large" />
-        <Text style={styles.loadingText}>Loading dashboard...</Text>
       </View>
     );
   }
@@ -229,7 +179,6 @@ export default function DoctorDashboard() {
   if (error) {
     return (
       <View style={styles.errorContainer}>
-        <Text style={styles.errorTitle}>Something went wrong</Text>
         <Text style={styles.errorText}>{error}</Text>
         <TouchableOpacity style={styles.retryButton} onPress={loadDashboardData}>
           <Text style={styles.retryButtonText}>Retry</Text>
@@ -238,25 +187,28 @@ export default function DoctorDashboard() {
     );
   }
 
-  // Redirect if not a doctor and not an admin/nurse
-  if (profile && profile.role !== 'doctor' && profile.role !== 'admin' && profile.role !== 'nurse') {
-    return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorTitle}>Access Restricted</Text>
-        <Text style={styles.errorText}>This dashboard is for healthcare providers only.</Text>
-        <TouchableOpacity 
-          style={styles.retryButton} 
-          onPress={() => router.replace('/(tabs)')}
-        >
-          <Text style={styles.retryButtonText}>Go to Patient Dashboard</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
   const renderTabContent = () => {
+    // Conditionally render based on user role
+    const userRole = profile?.role || 'patient';
+    
     switch (activeTab) {
       case 'overview':
+        if (userRole === 'patient') {
+          // For patients, show their own overview
+          return (
+            <OverviewTab
+              dashboardStats={{
+                totalPatients: 1,
+                criticalCases: 0,
+                stablePatients: 1,
+                pendingReviews: 0
+              }}
+              todaysAppointments={todaysAppointments}
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+            />
+          );
+        }
         return (
           <OverviewTab
             dashboardStats={dashboardStats}
@@ -282,7 +234,7 @@ export default function DoctorDashboard() {
           <MonitoringTab
             patients={patients}
             isMonitoring={isMonitoring}
-            selectedPatientForMonitoring={selectedPatientForMonitoring || ''}
+            selectedPatientForMonitoring={selectedPatientForMonitoring}
             refreshing={refreshing}
             onToggleMonitoring={() => setIsMonitoring(!isMonitoring)}
             onSelectPatient={setSelectedPatientForMonitoring}
@@ -322,7 +274,7 @@ export default function DoctorDashboard() {
       <DashboardHeader
         profile={profile}
         onSwitchMode={switchToPatientMode}
-        notificationCount={dashboardStats.pendingReviews}
+        notificationCount={3}
       />
 
       <View style={styles.mainContent}>
@@ -350,12 +302,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#f8fafc',
-    gap: 16,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#6b7280',
-    fontWeight: '500',
   },
   errorContainer: {
     flex: 1,
@@ -363,12 +309,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#f8fafc',
     paddingHorizontal: 20,
-  },
-  errorTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1f2937',
-    marginBottom: 12,
   },
   errorText: {
     fontSize: 16,
