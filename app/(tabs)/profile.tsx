@@ -131,7 +131,6 @@ export default function ProfileScreen() {
           <TouchableOpacity 
             style={styles.dashboardButton}
             onPress={handleSwitchToDoctorDashboard}
-            onPress={item.onPress}
           >
             <Stethoscope color="#3b82f6" size={20} />
           </TouchableOpacity>
