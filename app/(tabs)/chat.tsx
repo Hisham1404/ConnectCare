@@ -39,6 +39,7 @@ export default function DailyCheckinScreen() {
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [conversationHistory, setConversationHistory] = useState<Message[]>([]);
   
   const recordingTimer = useRef<NodeJS.Timeout>();
   const pulseAnimation = useRef(new Animated.Value(1)).current;
@@ -161,6 +162,11 @@ export default function DailyCheckinScreen() {
   const handleStartCheckin = () => {
     setHasStarted(true);
     setIsVoiceMode(true);
+    
+    // Start the conversation with AI greeting
+    if (isSpeakerOn) {
+      handleTextToSpeech(questions[currentQuestion]);
+    }
   };
 
   const configureAudio = async () => {
@@ -282,19 +288,121 @@ export default function DailyCheckinScreen() {
     }
   };
 
-  const handleVoiceRecording = () => {
-    if (Platform.OS === 'web') {
-      console.log('Voice recording placeholder - would work on mobile devices');
+  const handleSpeechToText = async (audioUri: string): Promise<string> => {
+    try {
+      // For now, we'll simulate STT since ElevenLabs doesn't provide STT
+      // In a real implementation, you would use OpenAI Whisper or another STT service
+      
+      // Simulate processing time
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Return a simulated response based on the current question
+      const simulatedResponses = [
+        "I'm feeling much better today, thank you for asking.",
+        "My pain level is about a 3 out of 10 today.",
+        "Yes, I took all my morning medications as prescribed.",
+        "I slept well last night, about 7 hours of sleep.",
+        "No unusual symptoms today, everything seems normal."
+      ];
+      
+      return simulatedResponses[currentQuestion] || "Thank you for the question.";
+    } catch (error) {
+      console.error('Failed to convert speech to text:', error);
+      return "Sorry, I couldn't understand that. Could you please try again?";
+    }
+  };
+
+  const processUserResponse = async (userInput: string) => {
+    // Add user message to conversation history
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      text: userInput,
+      sender: 'user',
+      timestamp: new Date(),
+      isVoice: true,
+    };
+    
+    setConversationHistory(prev => [...prev, userMessage]);
+    
+    // Generate AI response
+    const aiResponseText = await generateAIResponse(userInput);
+    
+    // Add AI message to conversation history
+    const aiMessage: Message = {
+      id: (Date.now() + 1).toString(),
+      text: aiResponseText,
+      sender: 'ai',
+      timestamp: new Date(),
+      isVoice: true,
+    };
+    
+    setConversationHistory(prev => [...prev, aiMessage]);
+    
+    // Convert AI response to speech if speaker is on
+    if (isSpeakerOn) {
+      await handleTextToSpeech(aiResponseText);
     }
     
-    if (!isRecording) {
+    // Move to next question or complete check-in
+    if (currentQuestion < questions.length - 1) {
+      setTimeout(() => {
+        setCurrentQuestion(prev => prev + 1);
+        // Ask the next question
+        if (isSpeakerOn) {
+          handleTextToSpeech(questions[currentQuestion + 1]);
+        }
+      }, 2000);
+    } else {
+      // Complete the check-in
+      setTimeout(() => {
+        completeCheckin();
+      }, 2000);
+    }
+  };
+
+  const handleVoiceRecording = async () => {
+    if (Platform.OS === 'web') {
+      console.log('Voice recording placeholder - would work on mobile devices');
+      // For web demo, simulate the voice interaction
       setIsRecording(true);
       setRecordingDuration(0);
       
       recordingTimer.current = setInterval(() => {
         setRecordingDuration(prev => prev + 1);
       }, 1000);
+      
+      // Simulate recording for 3 seconds
+      setTimeout(() => {
+        setIsRecording(false);
+        if (recordingTimer.current) {
+          clearInterval(recordingTimer.current);
+        }
+        setIsProcessing(true);
+        
+        // Simulate STT processing
+        setTimeout(async () => {
+          const simulatedUserInput = `I'm feeling much better today, thank you for asking.`;
+          await processUserResponse(simulatedUserInput);
+          setIsProcessing(false);
+          setRecordingDuration(0);
+        }, 2000);
+      }, 3000);
+      
+      return;
+    }
+    
+    if (!isRecording) {
+      // Start recording
+      setIsRecording(true);
+      setRecordingDuration(0);
+      
+      const recordingInstance = await startRecording();
+      
+      recordingTimer.current = setInterval(() => {
+        setRecordingDuration(prev => prev + 1);
+      }, 1000);
     } else {
+      // Stop recording
       setIsRecording(false);
       if (recordingTimer.current) {
         clearInterval(recordingTimer.current);
@@ -302,37 +410,33 @@ export default function DailyCheckinScreen() {
       
       setIsProcessing(true);
       
-      // Simulate processing and save the response
-      setTimeout(async () => {
-        setIsProcessing(false);
-        if (currentQuestion < questions.length - 1) {
-          setCurrentQuestion(prev => prev + 1);
-        } else {
-          // Complete the check-in
-          await completeCheckin();
-        }
-        setRecordingDuration(0);
-      }, 2000);
+      const audioUri = await stopRecording();
+      
+      if (audioUri) {
+        // Convert speech to text
+        const transcribedText = await handleSpeechToText(audioUri);
+        
+        // Process the user's response
+        await processUserResponse(transcribedText);
+      }
+      
+      setIsProcessing(false);
+      setRecordingDuration(0);
     }
   };
 
-  const handleTextSubmit = () => {
+  const handleTextSubmit = async () => {
     if (textInput.trim()) {
       setIsProcessing(true);
       
-      const response = textInput.trim();
+      const userInput = textInput.trim();
       setTextInput('');
       
-      setTimeout(async () => {
-        setIsProcessing(false);
-        if (currentQuestion < questions.length - 1) {
-          setCurrentQuestion(prev => prev + 1);
-        } else {
-          // Complete the check-in
-          await completeCheckin();
-        }
-        setShowTextInput(false);
-      }, 1500);
+      // Process the user's text response
+      await processUserResponse(userInput);
+      
+      setIsProcessing(false);
+      setShowTextInput(false);
     }
   };
 
@@ -344,15 +448,32 @@ export default function DailyCheckinScreen() {
       // Simulate check-in completion
       console.log('✅ Check-in completed successfully');
       
+      // Add completion message
+      const completionMessage: Message = {
+        id: Date.now().toString(),
+        text: "Thank you for completing your daily check-in! Your responses have been saved and your healthcare team has been notified.",
+        sender: 'ai',
+        timestamp: new Date(),
+        isVoice: true,
+      };
+      
+      setConversationHistory(prev => [...prev, completionMessage]);
+      
+      // Speak the completion message
+      if (isSpeakerOn) {
+        await handleTextToSpeech(completionMessage.text);
+      }
+      
       // Show completion message
-      setCurrentQuestion(questions.length); // This will show "Thank you" message
+      setCurrentQuestion(questions.length);
       
       // Reset after a delay
       setTimeout(() => {
         setIsVoiceMode(false);
         setHasStarted(false);
         setCurrentQuestion(0);
-      }, 3000);
+        setConversationHistory([]);
+      }, 5000);
     } catch (error) {
       console.error('❌ Error completing check-in:', error);
     } finally {
@@ -371,6 +492,13 @@ export default function DailyCheckinScreen() {
     setCurrentQuestion(0);
     setIsProcessing(false);
     setIsSubmitting(false);
+    setConversationHistory([]);
+    
+    // Stop any playing audio
+    if (sound) {
+      sound.stopAsync();
+      setIsPlayingAudio(false);
+    }
   };
 
   const resetCheckin = () => {
@@ -382,6 +510,13 @@ export default function DailyCheckinScreen() {
     setRecordingDuration(0);
     setIsVoiceMode(false);
     setHasStarted(false);
+    setConversationHistory([]);
+    
+    // Stop any playing audio
+    if (sound) {
+      sound.stopAsync();
+      setIsPlayingAudio(false);
+    }
   };
 
   const formatDuration = (seconds: number) => {
@@ -413,7 +548,7 @@ export default function DailyCheckinScreen() {
         {/* Voice Animation Container */}
         <View style={styles.voiceModeContent}>
           {/* Ripple Effects */}
-          {isRecording && (
+          {(isRecording || isPlayingAudio) && (
             <>
               {[...Array(3)].map((_, i) => (
                 <Animated.View 
@@ -450,11 +585,18 @@ export default function DailyCheckinScreen() {
           ]}>
             <FeedbackButton
               onPress={handleVoiceRecording}
-              style={styles.voiceOrbButton}
+              style={[
+                styles.voiceOrbButton,
+                isRecording && styles.recordingOrb,
+                isPlayingAudio && styles.playingOrb,
+              ]}
               hapticFeedback={true}
+              disabled={isPlayingAudio || isSubmitting}
             >
-              {isProcessing ? (
+              {isProcessing || isSubmitting ? (
                 <Heart color={Colors.surface} size={48} />
+              ) : isPlayingAudio ? (
+                <Volume2 color={Colors.surface} size={48} />
               ) : isRecording ? (
                 <MicOff color={Colors.surface} size={48} />
               ) : (
@@ -470,12 +612,14 @@ export default function DailyCheckinScreen() {
           ]}>
             <Text style={styles.voiceStatusText}>
               {isProcessing ? 'Processing your response...' :
+               isSubmitting ? 'Completing check-in...' :
+               isPlayingAudio ? 'AI is speaking...' :
                isRecording ? `Recording... ${formatDuration(recordingDuration)}` :
                'Tap to speak your answer'}
             </Text>
             
             {/* Voice Waveform */}
-            {isRecording && (
+            {(isRecording || isPlayingAudio) && (
               <View style={styles.voiceWaveform}>
                 {[...Array(5)].map((_, i) => (
                   <Animated.View 
@@ -487,6 +631,7 @@ export default function DailyCheckinScreen() {
                           inputRange: [0, 1],
                           outputRange: [6, Math.random() * 30 + 10],
                         }),
+                        backgroundColor: isPlayingAudio ? Colors.accent : Colors.primary,
                       }
                     ]} 
                   />
@@ -506,6 +651,21 @@ export default function DailyCheckinScreen() {
                 : "Thank you for completing your daily check-in! Your responses have been saved."}
             </Text>
           </Animated.View>
+
+          {/* Progress Indicator */}
+          <View style={styles.voiceProgressContainer}>
+            <Text style={styles.voiceProgressText}>
+              {currentQuestion < questions.length 
+                ? `Question ${currentQuestion + 1} of ${questions.length}`
+                : "Complete"}
+            </Text>
+            <View style={styles.voiceProgressBar}>
+              <View style={[
+                styles.voiceProgressFill,
+                { width: `${Math.min(((currentQuestion + 1) / questions.length) * 100, 100)}%` }
+              ]} />
+            </View>
+          </View>
         </View>
       </Animated.View>
     );
@@ -521,7 +681,7 @@ export default function DailyCheckinScreen() {
             <View style={styles.aiHeaderAvatar}>
               <Bot color={Colors.accent} size={24} />
             </View>
-            <Text style={styles.headerTitle}>Daily Check-in</Text>
+            <Text style={styles.headerTitle}>AI Health Assistant</Text>
           </View>
           
           <FeedbackButton 
@@ -1118,6 +1278,14 @@ const styles = StyleSheet.create({
     shadowRadius: 24,
     elevation: 16,
   },
+  recordingOrb: {
+    backgroundColor: Colors.error,
+    shadowColor: Colors.error,
+  },
+  playingOrb: {
+    backgroundColor: Colors.accent,
+    shadowColor: Colors.accent,
+  },
   voiceStatusContainer: {
     alignItems: 'center',
     marginBottom: 60,
@@ -1144,6 +1312,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 24,
     maxWidth: '90%',
+    marginBottom: 40,
   },
   voiceQuestionText: {
     fontSize: 20,
@@ -1151,5 +1320,26 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 28,
     fontWeight: '500',
+  },
+  voiceProgressContainer: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  voiceProgressText: {
+    fontSize: 14,
+    color: `${Colors.surface}${Colors.opacity.heavy}`,
+    marginBottom: 12,
+    fontWeight: '600',
+  },
+  voiceProgressBar: {
+    width: '80%',
+    height: 4,
+    backgroundColor: `${Colors.surface}${Colors.opacity.light}`,
+    borderRadius: 2,
+  },
+  voiceProgressFill: {
+    height: '100%',
+    backgroundColor: Colors.surface,
+    borderRadius: 2,
   },
 });
