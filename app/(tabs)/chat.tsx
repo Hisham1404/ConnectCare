@@ -9,7 +9,7 @@ import {
   Platform,
   TextInput,
 } from 'react-native';
-import { Mic, Bot, MicOff, Volume2, VolumeX, Heart, Headphones, Type, X, Play } from 'lucide-react-native';
+import { Mic, Bot, MicOff, Volume2, VolumeX, Heart, Type, X, Play, CheckCircle, Clock, MessageCircle } from 'lucide-react-native';
 import { Colors } from '../../constants/Colors';
 import FeedbackButton from '../../components/ui/FeedbackButton';
 
@@ -344,20 +344,17 @@ export default function DailyCheckinScreen() {
     );
   }
 
-  // Initial Start Check-in Interface
+  // Initial Start Check-in Interface - REDESIGNED
   if (!hasStarted) {
     return (
       <View style={styles.container}>
-        {/* Header */}
+        {/* Simplified Header */}
         <View style={styles.header}>
-          <View style={styles.headerLeft}>
+          <View style={styles.headerContent}>
             <View style={styles.aiHeaderAvatar}>
-              <Bot color={Colors.accent} size={20} />
+              <Bot color={Colors.accent} size={24} />
             </View>
-            <View>
-              <Text style={styles.headerTitle}>Daily Check-in</Text>
-              <Text style={styles.headerSubtitle}>Voice-first health monitoring</Text>
-            </View>
+            <Text style={styles.headerTitle}>Daily Check-in</Text>
           </View>
           
           <FeedbackButton 
@@ -372,62 +369,64 @@ export default function DailyCheckinScreen() {
           </FeedbackButton>
         </View>
 
-        {/* Main Content - Start Check-in */}
-        <View style={styles.startCheckinContainer}>
-          <View style={styles.startCheckinContent}>
-            <Text style={styles.startCheckinTitle}>Ready for your daily check-in?</Text>
-            <Text style={styles.startCheckinSubtitle}>
-              I'll ask you a few questions about how you're feeling today. This usually takes about 2-3 minutes.
+        {/* Main Content - Redesigned for Focus */}
+        <View style={styles.mainContentContainer}>
+          {/* Central Focus Area */}
+          <View style={styles.centralFocusArea}>
+            {/* Main Title */}
+            <Text style={styles.mainTitle}>Ready for your daily check-in?</Text>
+            
+            {/* Subtitle */}
+            <Text style={styles.subtitle}>
+              I'll ask you a few questions about how you're feeling today. This usually takes 2-3 minutes.
             </Text>
             
-            {/* Large Start Button */}
+            {/* Primary Action Button */}
             <FeedbackButton
               onPress={handleStartCheckin}
-              style={styles.startCheckinButton}
+              style={styles.primaryActionButton}
               hapticFeedback={true}
             >
               <Animated.View style={[
-                styles.startButtonInner,
+                styles.actionButtonInner,
                 { 
-                  transform: [
-                    { scale: breathingAnimation }
-                  ] 
+                  transform: [{ scale: breathingAnimation }] 
                 }
               ]}>
-                <Play color={Colors.surface} size={40} />
+                <Mic color={Colors.surface} size={32} />
               </Animated.View>
-              <Text style={styles.startButtonText}>Start Check-in</Text>
+              <Text style={styles.primaryActionText}>Start Voice Check-in</Text>
             </FeedbackButton>
-
-            {/* Features List */}
-            <View style={styles.featuresList}>
-              <View style={styles.featureItem}>
-                <Mic color={Colors.accent} size={16} />
-                <Text style={styles.featureText}>Voice-powered responses</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Heart color={Colors.heartRate} size={16} />
-                <Text style={styles.featureText}>Health insights & analysis</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Bot color={Colors.success} size={16} />
-                <Text style={styles.featureText}>AI-powered recommendations</Text>
-              </View>
-            </View>
           </View>
 
-          {/* Alternative Options */}
-          <View style={styles.alternativeOptions}>
+          {/* Secondary Actions */}
+          <View style={styles.secondaryActionsContainer}>
             <FeedbackButton
               onPress={() => {
                 setHasStarted(true);
                 setShowTextInput(true);
               }}
-              style={styles.alternativeButton}
+              style={styles.secondaryActionButton}
             >
               <Type color={Colors.textSecondary} size={20} />
-              <Text style={styles.alternativeButtonText}>Use Text Instead</Text>
+              <Text style={styles.secondaryActionText}>Use Text Instead</Text>
             </FeedbackButton>
+          </View>
+
+          {/* Subtle Feature Indicators */}
+          <View style={styles.featureIndicators}>
+            <View style={styles.featureIndicator}>
+              <MessageCircle color={Colors.accent} size={16} />
+              <Text style={styles.featureIndicatorText}>Voice-powered</Text>
+            </View>
+            <View style={styles.featureIndicator}>
+              <Heart color={Colors.heartRate} size={16} />
+              <Text style={styles.featureIndicatorText}>Health insights</Text>
+            </View>
+            <View style={styles.featureIndicator}>
+              <CheckCircle color={Colors.success} size={16} />
+              <Text style={styles.featureIndicatorText}>AI analysis</Text>
+            </View>
           </View>
         </View>
       </View>
@@ -538,7 +537,7 @@ export default function DailyCheckinScreen() {
             onPress={resetCheckin}
             style={styles.actionButton}
           >
-            <Headphones color={Colors.textSecondary} size={20} />
+            <Clock color={Colors.textSecondary} size={20} />
             <Text style={styles.actionButtonText}>Start Over</Text>
           </FeedbackButton>
         </View>
@@ -586,6 +585,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: `${Colors.textSecondary}${Colors.opacity.light}`,
   },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -617,26 +621,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  startCheckinContainer: {
+  
+  // REDESIGNED INITIAL SCREEN STYLES
+  mainContentContainer: {
     flex: 1,
-    justifyContent: 'space-between',
     paddingHorizontal: 24,
+    justifyContent: 'space-between',
     paddingVertical: 40,
   },
-  startCheckinContent: {
+  centralFocusArea: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 20,
   },
-  startCheckinTitle: {
-    fontSize: 28,
+  mainTitle: {
+    fontSize: 32,
     fontWeight: '800',
     color: Colors.textPrimary,
     textAlign: 'center',
     marginBottom: 16,
-    lineHeight: 36,
+    lineHeight: 40,
   },
-  startCheckinSubtitle: {
+  subtitle: {
     fontSize: 16,
     color: Colors.textSecondary,
     textAlign: 'center',
@@ -644,14 +651,14 @@ const styles = StyleSheet.create({
     marginBottom: 48,
     paddingHorizontal: 20,
   },
-  startCheckinButton: {
+  primaryActionButton: {
     alignItems: 'center',
     marginBottom: 40,
   },
-  startButtonInner: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
+  actionButtonInner: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
@@ -662,36 +669,16 @@ const styles = StyleSheet.create({
     elevation: 16,
     marginBottom: 16,
   },
-  startButtonText: {
+  primaryActionText: {
     fontSize: 18,
     fontWeight: '700',
     color: Colors.primary,
   },
-  featuresList: {
-    gap: 16,
-  },
-  featureItem: {
-    flexDirection: 'row',
+  secondaryActionsContainer: {
     alignItems: 'center',
-    gap: 12,
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    marginBottom: 32,
   },
-  featureText: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    fontWeight: '500',
-  },
-  alternativeOptions: {
-    alignItems: 'center',
-  },
-  alternativeButton: {
+  secondaryActionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
@@ -705,11 +692,28 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-  alternativeButtonText: {
+  secondaryActionText: {
     fontSize: 14,
     color: Colors.textSecondary,
     fontWeight: '600',
   },
+  featureIndicators: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 24,
+    paddingHorizontal: 20,
+  },
+  featureIndicator: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  featureIndicatorText: {
+    fontSize: 12,
+    color: Colors.textTertiary,
+    fontWeight: '500',
+  },
+
+  // EXISTING STYLES (unchanged)
   mainContent: {
     flex: 1,
     paddingHorizontal: 24,
