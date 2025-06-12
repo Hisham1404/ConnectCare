@@ -7,7 +7,17 @@
     "start": "expo start",
     "dev": "EXPO_NO_TELEMETRY=1 expo start",
     "build:web": "expo export --platform web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "test": "node testing/scripts/run-tests.js",
+    "test:unit": "jest testing/unit --verbose",
+    "test:e2e": "playwright test testing/e2e",
+    "test:security": "playwright test testing/e2e/security-violations.test.js",
+    "test:seed-db": "node testing/scripts/seed-database.js",
+    "test:cleanup": "node testing/scripts/cleanup-test-data.js",
+    "test:database": "jest testing/unit/database-functions.test.js",
+    "test:rls": "jest testing/unit/rls-policies.test.js",
+    "test:patient": "playwright test testing/e2e/patient-isolation.test.js",
+    "test:doctor": "playwright test testing/e2e/doctor-access.test.js"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
@@ -47,7 +57,20 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
+    "@playwright/test": "^1.40.0",
+    "@testing-library/jest-native": "^5.4.3",
+    "@testing-library/react-native": "^12.4.2",
+    "jest": "^29.7.0",
+    "jest-environment-node": "^29.7.0",
     "@types/react": "~19.0.10",
     "typescript": "~5.8.3"
+  },
+  "jest": {
+    "preset": "react-native",
+    "testEnvironment": "node",
+    "setupFilesAfterEnv": ["@testing-library/jest-native/extend-expect"],
+    "testMatch": ["**/testing/**/*.test.js"],
+    "testTimeout": 60000,
+    "verbose": true
   }
 }
