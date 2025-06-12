@@ -9,7 +9,8 @@ import {
   Switch,
   Dimensions,
 } from 'react-native';
-import { User, Settings, Bell, Shield, CircleHelp as HelpCircle, CreditCard as Edit3, Award, Activity, Users, Calendar, ChevronRight, Star, TrendingUp, Heart, Pill, FileText, Phone, MapPin, Clock, Target, Zap, Download, Share, Camera, CircleCheck as CheckCircle } from 'lucide-react-native';
+import { User, Settings, Bell, Shield, CircleHelp as HelpCircle, CreditCard as Edit3, Award, Activity, Users, Calendar, ChevronRight, Star, TrendingUp, Heart, Pill, FileText, Phone, MapPin, Clock, Target, Zap, Download, Share, Camera, CircleCheck as CheckCircle, Stethoscope, ArrowLeft } from 'lucide-react-native';
+import { router } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 
@@ -105,7 +106,12 @@ export default function ProfileScreen() {
     { icon: Phone, label: 'Emergency Call', color: '#ef4444' },
   ];
 
+  const handleSwitchToDoctorDashboard = () => {
+    router.push('/dashboard');
+  };
+
   const menuItems = [
+    { icon: Stethoscope, label: 'Switch to Doctor Dashboard', color: '#3b82f6', hasArrow: true, onPress: handleSwitchToDoctorDashboard },
     { icon: Edit3, label: 'Edit Profile', color: '#3b82f6', hasArrow: true },
     { icon: FileText, label: 'Medical Records', color: '#10b981', hasArrow: true },
     { icon: Pill, label: 'Medications', color: '#f59e0b', hasArrow: true },
@@ -122,6 +128,13 @@ export default function ProfileScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>Profile</Text>
         <View style={styles.headerActions}>
+          <TouchableOpacity 
+            style={styles.dashboardButton}
+            onPress={handleSwitchToDoctorDashboard}
+            onPress={item.onPress}
+          >
+            <Stethoscope color="#3b82f6" size={20} />
+          </TouchableOpacity>
           <TouchableOpacity style={styles.editButton}>
             <Edit3 color="#3b82f6" size={20} />
           </TouchableOpacity>
@@ -338,6 +351,14 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
     gap: 8,
+  },
+  dashboardButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#eff6ff',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   editButton: {
     width: 44,
