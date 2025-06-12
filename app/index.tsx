@@ -137,25 +137,44 @@ export default function WelcomeScreen() {
             </Text>
             
             <View style={styles.demoAccountsContainer}>
-              {demoAccounts.map((account, index) => (
-                <TouchableOpacity 
-                  key={index}
-                  style={styles.demoAccountCard}
-                  onPress={() => {
-                    console.log(`Navigating to ${account.route}`);
-                    router.push(account.route);
-                  }}
-                >
-                  <View style={[styles.demoIcon, { backgroundColor: `${account.color}15` }]}>
-                    <account.icon color={account.color} size={24} />
-                  </View>
-                  <View style={styles.demoAccountInfo}>
-                    <Text style={styles.demoAccountType}>{account.type}</Text>
-                    <Text style={styles.demoAccountDescription}>{account.description}</Text>
-                  </View>
-                  <ArrowRight color={Colors.textSecondary} size={20} />
-                </TouchableOpacity>
-              ))}
+              <TouchableOpacity 
+                style={styles.demoAccountCard}
+                onPress={() => {
+                  console.log('Navigating to doctor dashboard');
+                  router.push('/dashboard');
+                }}
+              >
+                <Stethoscope color={Colors.accent} size={24} />
+                <Text style={styles.demoAccountType}>Doctor Dashboard</Text>
+                <Text style={styles.demoAccountDescription}>View the complete doctor interface with patient monitoring, AI insights, and real-time alerts.</Text>
+                <ArrowRight color={Colors.textSecondary} size={20} />
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.demoAccountCard}
+                onPress={() => {
+                  console.log('Navigating to patient interface');
+                  router.push('/(tabs)');
+                }}
+              >
+                <User color={Colors.success} size={24} />
+                <Text style={styles.demoAccountType}>Patient Interface</Text>
+                <Text style={styles.demoAccountDescription}>Experience the patient-focused tabs with health monitoring, AI chat, and profile management.</Text>
+                <ArrowRight color={Colors.textSecondary} size={20} />
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.demoAccountCard}
+                onPress={() => {
+                  console.log('Navigating to authentication');
+                  router.push('/(auth)/signin');
+                }}
+              >
+                <User color={Colors.primary} size={24} />
+                <Text style={styles.demoAccountType}>Sign In / Sign Up</Text>
+                <Text style={styles.demoAccountDescription}>Create an account or sign in to access personalized features and save your health data.</Text>
+                <ArrowRight color={Colors.textSecondary} size={20} />
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -269,6 +288,17 @@ export default function WelcomeScreen() {
             >
               <User color={Colors.accent} size={20} />
               <Text style={[styles.finalCtaButtonText, styles.secondaryCtaButtonText]}>Patient Interface</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.finalCtaButton, styles.tertiaryCtaButton]}
+              onPress={() => {
+                console.log('Navigating to authentication');
+                router.push('/(auth)/signin');
+              }}
+            >
+              <User color={Colors.primary} size={20} />
+              <Text style={[styles.finalCtaButtonText, styles.tertiaryCtaButtonText]}>Sign In</Text>
             </TouchableOpacity>
           </View>
 
@@ -647,6 +677,14 @@ const styles = StyleSheet.create({
   },
   secondaryCtaButtonText: {
     color: Colors.accent,
+  },
+  tertiaryCtaButton: {
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+  },
+  tertiaryCtaButtonText: {
+    color: Colors.primary,
   },
   finalCtaNote: {
     fontSize: 12,
