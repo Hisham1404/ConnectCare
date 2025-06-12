@@ -1,11 +1,12 @@
 'use dom';
 
-import { useConversation } from '@elevenlabs/react';
+import { useConversation, Message } from '@elevenlabs/react';
 import { Mic } from 'lucide-react-native';
 import { useCallback } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
 
 import tools from '../utils/tools';
+import { useTranscript } from '../context/TranscriptContext';
 
 async function requestMicrophonePermission() {
   try {
@@ -29,27 +30,46 @@ export default function ConvAiDOMComponent({
   change_brightness: typeof tools.change_brightness;
   flash_screen: typeof tools.flash_screen;
 }) {
+  const { addMessage, clearTranscript, setIsRecording } = useTranscript();
+
+  const onMessage = (message: Message) => {
+    console.log('Received message:', message);
+    
+    // Only add messages that have final text content
+    if (message.type === 'user_transcript' && message.text && message.text.trim()) {
+      addMessage({ role: 'user', text: message.text.trim() });
+    } else if (message.type === 'agent_response' && message.text && message.text.trim()) {
+      addMessage({ role: 'assistant', text: message.text.trim() });
+    }
+  };
+
   const conversation = useConversation({
     agentId: process.env.EXPO_PUBLIC_ELEVENLABS_AGENT_ID || 'YOUR_AGENT_ID',
     elevenLabsApiKey: process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY || 'YOUR_ELEVENLABS_API_KEY',
-    onMessage: (message) => console.log(message),
+    onMessage: onMessage,
   });
 
   const startConversation = useCallback(async () => {
+    clearTranscript(); // Clear previous conversation
+    setIsRecording(true);
+    
     const hasPermission = await requestMicrophonePermission();
     if (!hasPermission) {
       alert('Microphone permission is required.');
+      setIsRecording(false);
       return;
     }
+    
     await conversation.startSession({
       dynamicVariables: { platform },
       clientTools: { get_battery_level, change_brightness, flash_screen },
     });
-  }, [conversation, platform, get_battery_level, change_brightness, flash_screen]);
+  }, [conversation, platform, get_battery_level, change_brightness, flash_screen, clearTranscript, setIsRecording]);
 
   const stopConversation = useCallback(async () => {
+    setIsRecording(false);
     await conversation.endSession();
-  }, [conversation]);
+  }, [conversation, setIsRecording]);
 
   return (
     <Pressable
