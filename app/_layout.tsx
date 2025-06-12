@@ -1,150 +1,59 @@
 import { useEffect, useState } from 'react';
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View, Text, StyleSheet, Alert } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { useAuth } from '@/hooks/useAuth';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { Colors } from '@/constants/Colors';
 import { Heart } from 'lucide-react-native';
 
-interface NavigationState {
-  isInitialized: boolean;
-  hasNavigated: boolean;
-  lastAuthState: string | null;
-}
-
 export default function RootLayout() {
   useFrameworkReady();
   
   const { user, profile, loading: authLoading, error: authError } = useAuth();
-  const [navigationState, setNavigationState] = useState<NavigationState>({
-    isInitialized: false,
-    hasNavigated: false,
-    lastAuthState: null,
-  });
-  const [appError, setAppError] = useState<string | null>(null);
+  const [initialLoad, setInitialLoad] = useState(true);
+  const [navigationReady, setNavigationReady] = useState(false);
 
-  // Determine current auth state for comparison
-  const currentAuthState = user ? `${user.id}-${profile?.role || 'no-role'}` : 'no-user';
-
-  // Handle navigation based on authentication state
+  // Handle navigation based on authentication status
   useEffect(() => {
-    // Don't navigate if still loading or if we've already handled this auth state
-    if (authLoading || navigationState.lastAuthState === currentAuthState) {
-      return;
-    }
-
-    // Clear any previous app errors when auth state changes
-    setAppError(null);
-
-    const handleNavigation = async () => {
-      try {
-        console.log('🧭 Navigation check:', {
-          user: !!user,
-          profile: !!profile,
-          role: profile?.role,
-          authLoading,
-          authError: !!authError
-        });
-
-        // Handle authentication errors
-        if (authError) {
-          console.error('❌ Authentication error:', authError);
-          setAppError('Authentication failed. Please try signing in again.');
-          router.replace('/auth/sign-in');
-          return;
-        }
-
-        // User is not authenticated - redirect to welcome/auth
-        if (!user) {
-          console.log('🔓 No user found, redirecting to welcome');
+    if (!authLoading && initialLoad) {
+      setInitialLoad(false);
+      setNavigationReady(true);
+      
+      // Add a small delay to ensure smooth navigation
+      setTimeout(() => {
+        if (user && profile) {
+          // User is authenticated with profile, redirect based on role
+          switch (profile.role) {
+            case 'doctor':
+            case 'admin':
+            case 'nurse':
+              console.log(`👨‍⚕️ Redirecting ${profile.role} to dashboard`);
+              router.replace('/dashboard');
+              break;
+              
+            case 'patient':
+              console.log('🏥 Redirecting patient to tabs');
+              router.replace('/(tabs)');
+              break;
+              
+            default:
+              console.log('🔓 Unknown role, redirecting to welcome');
+              router.replace('/');
+              break;
+          }
+        } else {
+          // User is not authenticated or no profile, show welcome screen
+          console.log('🔓 No user/profile found, redirecting to welcome');
           router.replace('/');
-          return;
         }
+      }, 100);
+    }
+  }, [user, profile, authLoading, initialLoad]);
 
-        // User is authenticated but profile is missing
-        if (!profile) {
-          console.warn('⚠️ User authenticated but no profile found');
-          setAppError('Profile not found. Please contact support or try signing up again.');
-          
-          // Give user option to sign out and try again
-          Alert.alert(
-            'Profile Missing',
-            'Your profile could not be loaded. This might be a temporary issue.',
-            [
-              {
-                text: 'Try Again',
-                onPress: () => {
-                  setAppError(null);
-                  // Force a profile refresh by clearing the auth state
-                  setNavigationState(prev => ({ ...prev, lastAuthState: null }));
-                }
-              },
-              {
-                text: 'Sign Out',
-                style: 'destructive',
-                onPress: () => {
-                  // This would trigger the useAuth hook to sign out
-                  router.replace('/auth/sign-in');
-                }
-              }
-            ]
-          );
-          return;
-        }
-
-        // Role-based navigation
-        switch (profile.role) {
-          case 'doctor':
-          case 'admin':
-          case 'nurse':
-            console.log(`👨‍⚕️ Redirecting ${profile.role} to dashboard`);
-            router.replace('/dashboard');
-            break;
-            
-          case 'patient':
-            console.log('🏥 Redirecting patient to tabs');
-            router.replace('/(tabs)');
-            break;
-            
-          default:
-            console.error('❌ Unknown user role:', profile.role);
-            setAppError(`Unknown user role: ${profile.role}. Please contact support.`);
-            Alert.alert(
-              'Unknown Role',
-              `Your account has an unrecognized role (${profile.role}). Please contact support for assistance.`,
-              [
-                {
-                  text: 'Sign Out',
-                  onPress: () => router.replace('/auth/sign-in')
-                }
-              ]
-            );
-            return;
-        }
-
-        // Update navigation state to prevent re-navigation
-        setNavigationState({
-          isInitialized: true,
-          hasNavigated: true,
-          lastAuthState: currentAuthState,
-        });
-
-      } catch (error) {
-        console.error('❌ Navigation error:', error);
-        setAppError('Navigation failed. Please try refreshing the app.');
-      }
-    };
-
-    // Add a small delay to ensure smooth transitions
-    const navigationTimer = setTimeout(handleNavigation, 100);
-    
-    return () => clearTimeout(navigationTimer);
-  }, [user, profile, authLoading, authError, currentAuthState, navigationState.lastAuthState]);
-
-  // Show loading screen while authentication is being checked
-  if (authLoading || !navigationState.isInitialized) {
+  // Show loading screen while checking authentication or during initial navigation
+  if (authLoading || initialLoad || !navigationReady) {
     return (
       <View style={styles.loadingContainer}>
         <StatusBar style="light" />
@@ -170,17 +79,17 @@ export default function RootLayout() {
             <View style={styles.progressBar}>
               <View style={[
                 styles.progressFill,
-                { width: authLoading ? '30%' : '70%' }
+                { width: authLoading ? '30%' : '90%' }
               ]} />
             </View>
           </View>
         </View>
 
         {/* Error Display */}
-        {(authError || appError) && (
+        {authError && (
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>
-              {appError || authError}
+              Authentication error. Please try again.
             </Text>
           </View>
         )}
@@ -190,30 +99,6 @@ export default function RootLayout() {
           <Text style={styles.footerText}>
             Secure • HIPAA Compliant • AI-Powered
           </Text>
-        </View>
-      </View>
-    );
-  }
-
-  // Show error screen if there's a persistent error
-  if (appError && navigationState.isInitialized) {
-    return (
-      <View style={styles.errorScreenContainer}>
-        <StatusBar style="dark" />
-        
-        <View style={styles.errorContent}>
-          <View style={styles.errorIcon}>
-            <Heart color={Colors.error} size={48} />
-          </View>
-          
-          <Text style={styles.errorTitle}>Something went wrong</Text>
-          <Text style={styles.errorMessage}>{appError}</Text>
-          
-          <View style={styles.errorActions}>
-            <Text style={styles.errorHelpText}>
-              If this problem persists, please contact support at support@connectcare.ai
-            </Text>
-          </View>
         </View>
       </View>
     );
@@ -308,7 +193,6 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: Colors.surface,
     borderRadius: 2,
-    transition: 'width 0.3s ease',
   },
   errorContainer: {
     backgroundColor: `${Colors.error}20`,
@@ -334,48 +218,5 @@ const styles = StyleSheet.create({
     color: `${Colors.surface}60`,
     textAlign: 'center',
     fontWeight: '500',
-  },
-  errorScreenContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: Colors.background,
-    paddingHorizontal: 40,
-  },
-  errorContent: {
-    alignItems: 'center',
-    maxWidth: 400,
-  },
-  errorIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: `${Colors.error}${Colors.opacity.light}`,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  errorTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: Colors.textPrimary,
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  errorMessage: {
-    fontSize: 16,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 32,
-  },
-  errorActions: {
-    alignItems: 'center',
-  },
-  errorHelpText: {
-    fontSize: 12,
-    color: Colors.textTertiary,
-    textAlign: 'center',
-    lineHeight: 18,
   },
 });
