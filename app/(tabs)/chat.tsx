@@ -12,8 +12,6 @@ import {
 import { Mic, Bot, MicOff, Volume2, VolumeX, Heart, Type, X, Play, CircleCheck as CheckCircle, Clock, MessageCircle } from 'lucide-react-native';
 import { Colors } from '../../constants/Colors';
 import FeedbackButton from '../../components/ui/FeedbackButton';
-import { useAuth } from '@/hooks/useAuth';
-import { DatabaseService } from '../../lib/database';
 
 const { width, height } = Dimensions.get('window');
 
@@ -27,7 +25,6 @@ interface Message {
 }
 
 export default function DailyCheckinScreen() {
-  const { profile } = useAuth();
   const [isRecording, setIsRecording] = useState(false);
   const [isVoiceMode, setIsVoiceMode] = useState(false);
   const [isSpeakerOn, setIsSpeakerOn] = useState(true);
@@ -37,7 +34,6 @@ export default function DailyCheckinScreen() {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
-  const [patientData, setPatientData] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const recordingTimer = useRef<NodeJS.Timeout>();
@@ -55,22 +51,6 @@ export default function DailyCheckinScreen() {
     "How did you sleep last night?",
     "Have you experienced any unusual symptoms?",
   ];
-
-  // Load patient data on component mount
-  useEffect(() => {
-    loadPatientData();
-  }, [profile]);
-
-  const loadPatientData = async () => {
-    if (profile?.role === 'patient') {
-      try {
-        const patient = await DatabaseService.getPatientById(profile.id);
-        setPatientData(patient);
-      } catch (error) {
-        console.error('Error loading patient data:', error);
-      }
-    }
-  };
 
   useEffect(() => {
     // Gentle breathing animation for the central icon
@@ -221,46 +201,22 @@ export default function DailyCheckinScreen() {
   };
 
   const completeCheckin = async () => {
-    if (!patientData) {
-      console.error('No patient data available for checkin');
-      return;
-    }
-
     try {
       setIsSubmitting(true);
-      console.log('💾 Completing daily check-in for patient:', patientData.id);
+      console.log('💾 Completing daily check-in');
 
-      // Create a new daily checkin record
-      const checkinData = {
-        patient_id: patientData.id,
-        checkin_date: new Date().toISOString().split('T')[0],
-        status: 'completed' as const,
-        patient_notes: 'Daily check-in completed via voice/text interface',
-        completed_at: new Date().toISOString(),
-        // You could add more specific data based on the questions answered
-        pain_level: Math.floor(Math.random() * 5) + 1, // Mock data for demo
-        mood_rating: Math.floor(Math.random() * 5) + 1, // Mock data for demo
-        medications_taken: true,
-      };
-
-      const result = await DatabaseService.createCheckin(checkinData);
+      // Simulate check-in completion
+      console.log('✅ Check-in completed successfully');
       
-      if (result) {
-        console.log('✅ Check-in completed successfully:', result.id);
-        
-        // Show completion message
-        setCurrentQuestion(questions.length); // This will show "Thank you" message
-        
-        // Reset after a delay
-        setTimeout(() => {
-          setIsVoiceMode(false);
-          setHasStarted(false);
-          setCurrentQuestion(0);
-        }, 3000);
-      } else {
-        console.error('❌ Failed to save check-in');
-        // Handle error - maybe show an error message to user
-      }
+      // Show completion message
+      setCurrentQuestion(questions.length); // This will show "Thank you" message
+      
+      // Reset after a delay
+      setTimeout(() => {
+        setIsVoiceMode(false);
+        setHasStarted(false);
+        setCurrentQuestion(0);
+      }, 3000);
     } catch (error) {
       console.error('❌ Error completing check-in:', error);
     } finally {
@@ -1009,70 +965,4 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
   },
-  voiceRipple: {
-    position: 'absolute',
-    borderRadius: 1000,
-    borderWidth: 2,
-    borderColor: `${Colors.primary}30`,
-  },
-  voiceOrb: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  voiceOrbButton: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: `${Colors.primary}CC`,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 24,
-    elevation: 16,
-  },
-  voiceStatusContainer: {
-    alignItems: 'center',
-    marginBottom: 60,
-  },
-  voiceStatusText: {
-    fontSize: 18,
-    color: Colors.surface,
-    textAlign: 'center',
-    fontWeight: '500',
-    marginBottom: 20,
-  },
-  voiceWaveform: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    height: 40,
-  },
-  voiceWaveBar: {
-    width: 6,
-    backgroundColor: 'rgba(255,255,255,0.8)',
-    borderRadius: 3,
-  },
-  voiceQuestionContainer: {
-    position: 'absolute',
-    bottom: 100,
-    left: 24,
-    right: 24,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 20,
-    padding: 24,
-    backdropFilter: 'blur(10px)',
-  },
-  voiceQuestionText: {
-    fontSize: 16,
-    color: Colors.surface,
-    textAlign: 'center',
-    lineHeight: 24,
-    fontWeight: '500',
-  },
-});
+  voiceRip
