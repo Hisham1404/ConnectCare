@@ -320,7 +320,11 @@ export default function PatientDashboard() {
         <FeedbackButton
           onPress={() => {
             console.log('Back button pressed - navigating to home');
-            router.replace('/');
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.push('/');
+            }
           }}
           style={styles.backButton}
         >
