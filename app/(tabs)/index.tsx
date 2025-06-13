@@ -10,7 +10,8 @@ import {
   RefreshControl,
   FlatList,
 } from 'react-native';
-import { Pill, Heart, Activity, Calendar, Clock, User, TrendingUp, CircleAlert as AlertCircle, CircleCheck as CheckCircle, Apple, Dumbbell, Thermometer, Droplets, Zap, Target, Award, Bell, Phone, Video, MessageSquare, Plus, ChevronRight } from 'lucide-react-native';
+import { Pill, Heart, Activity, Calendar, Clock, User, TrendingUp, CircleAlert as AlertCircle, CircleCheck as CheckCircle, Apple, Dumbbell, Thermometer, Droplets, Zap, Target, Award, Bell, Phone, Video, MessageSquare, Plus, ChevronRight, ArrowLeft } from 'lucide-react-native';
+import { router } from 'expo-router';
 import { Colors, SemanticColors } from '../../constants/Colors';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
@@ -316,6 +317,13 @@ export default function PatientDashboard() {
     >
       {/* Header */}
       <View style={styles.header}>
+        <FeedbackButton
+          onPress={() => router.replace('/')}
+          style={styles.backButton}
+        >
+          <ArrowLeft color={Colors.textSecondary} size={24} />
+        </FeedbackButton>
+        
         <View style={styles.headerLeft}>
           {isLoadingData ? (
             <SkeletonLoader width={48} height={48} borderRadius={24} style={styles.avatar} />
@@ -668,14 +676,28 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 20,
     backgroundColor: Colors.surface,
   },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
   headerLeft: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,

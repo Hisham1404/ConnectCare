@@ -1,16 +1,34 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { Bell, User } from 'lucide-react-native';
+import { Bell, User, ArrowLeft } from 'lucide-react-native';
+import FeedbackButton from '../ui/FeedbackButton';
 
 interface DashboardHeaderProps {
   profile: any;
   onSwitchMode: () => void;
   notificationCount?: number;
+  showBackButton?: boolean;
+  onBackPress?: () => void;
 }
 
-export default function DashboardHeader({ profile, onSwitchMode, notificationCount = 0 }: DashboardHeaderProps) {
+export default function DashboardHeader({ 
+  profile, 
+  onSwitchMode, 
+  notificationCount = 0,
+  showBackButton = false,
+  onBackPress
+}: DashboardHeaderProps) {
   return (
     <View style={styles.header}>
+      {showBackButton && (
+        <FeedbackButton
+          onPress={onBackPress || (() => {})}
+          style={styles.backButton}
+        >
+          <ArrowLeft color="#6b7280" size={24} />
+        </FeedbackButton>
+      )}
+      
       <View style={styles.headerLeft}>
         <Image 
           source={{ uri: profile?.avatar_url }} 
@@ -47,7 +65,6 @@ export default function DashboardHeader({ profile, onSwitchMode, notificationCou
 const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 60,
@@ -56,7 +73,22 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#f8fafc',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
   headerLeft: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,

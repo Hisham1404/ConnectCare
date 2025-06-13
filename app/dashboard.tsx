@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { router } from 'expo-router';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 
 // Import components
@@ -226,6 +227,8 @@ export default function DoctorDashboard() {
         profile={mockProfile}
         onSwitchMode={switchToPatientMode}
         notificationCount={dashboardStats.pendingReviews}
+        showBackButton={true}
+        onBackPress={() => router.replace('/')}
       />
 
       <View style={styles.mainContent}>
