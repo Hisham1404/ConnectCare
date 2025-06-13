@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "ConnectCare AI",
-    "slug": "connectcare",
+    "slug": "connectcare-ai",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -17,8 +17,7 @@
     "android": {
       "permissions": [
         "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS",
-        "android.permission.CAMERA"
+        "android.permission.MODIFY_AUDIO_SETTINGS"
       ]
     },
     "web": {
@@ -26,21 +25,9 @@
       "output": "server",
       "favicon": "./assets/images/favicon.png"
     },
-    "plugins": [
-      "expo-router",
-      "expo-font",
-      "expo-web-browser",
-      "expo-camera"
-    ],
+    "plugins": ["expo-router", "expo-font", "expo-web-browser", "expo-camera"],
     "experiments": {
       "typedRoutes": true
-    },
-    "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "1df4d29b-e258-4b0c-aae4-03a446f98608"
-      }
-    },
-    "owner": "hisham1404"
+    }
   }
 }
