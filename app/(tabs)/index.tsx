@@ -324,44 +324,46 @@ export default function PatientDashboard() {
           <ArrowLeft color={Colors.textSecondary} size={24} />
         </FeedbackButton>
         
-        <View style={styles.headerLeft}>
-          {isLoadingData ? (
-            <SkeletonLoader width={48} height={48} borderRadius={24} style={styles.avatar} />
-          ) : (
-            <Image 
-              source={{ uri: mockProfile?.avatar_url }} 
-              style={styles.avatar} 
-            />
-          )}
-          <View>
+        <View style={styles.headerContentContainer}>
+          <View style={styles.headerLeft}>
             {isLoadingData ? (
-              <>
-                <SkeletonLoader width={80} height={14} style={{ marginBottom: 4 }} />
-                <SkeletonLoader width={120} height={18} style={{ marginBottom: 4 }} />
-                <SkeletonLoader width={100} height={12} />
-              </>
+              <SkeletonLoader width={48} height={48} borderRadius={24} style={styles.avatar} />
             ) : (
-              <>
-                <Text style={styles.greeting}>Good Morning</Text>
-                <Text style={styles.userName}>{mockProfile?.full_name}</Text>
-                <Text style={styles.healthStatus}>Day 12 of recovery</Text>
-              </>
+              <Image 
+                source={{ uri: mockProfile?.avatar_url }} 
+                style={styles.avatar} 
+              />
             )}
+            <View>
+              {isLoadingData ? (
+                <>
+                  <SkeletonLoader width={80} height={14} style={{ marginBottom: 4 }} />
+                  <SkeletonLoader width={120} height={18} style={{ marginBottom: 4 }} />
+                  <SkeletonLoader width={100} height={12} />
+                </>
+              ) : (
+                <>
+                  <Text style={styles.greeting}>Good Morning</Text>
+                  <Text style={styles.userName}>{mockProfile?.full_name}</Text>
+                  <Text style={styles.healthStatus}>Day 12 of recovery</Text>
+                </>
+              )}
+            </View>
           </View>
-        </View>
-        
-        <View style={styles.headerRight}>
-          <FeedbackButton
-            onPress={() => console.log('Notifications pressed')}
-            style={styles.notificationButton}
-          >
-            <Bell color={Colors.textSecondary} size={24} />
-            {!isLoadingData && (
-              <View style={styles.notificationBadge}>
-                <Text style={styles.badgeText}>{getPendingMedications().length}</Text>
-              </View>
-            )}
-          </FeedbackButton>
+          
+          <View style={styles.headerRight}>
+            <FeedbackButton
+              onPress={() => console.log('Notifications pressed')}
+              style={styles.notificationButton}
+            >
+              <Bell color={Colors.textSecondary} size={24} />
+              {!isLoadingData && (
+                <View style={styles.notificationBadge}>
+                  <Text style={styles.badgeText}>{getPendingMedications().length}</Text>
+                </View>
+              )}
+            </FeedbackButton>
+          </View>
         </View>
       </View>
 
@@ -696,8 +698,13 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-  headerLeft: {
+  headerContentContainer: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
