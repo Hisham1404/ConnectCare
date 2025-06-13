@@ -131,7 +131,10 @@ export default function WelcomeScreen() {
 
           {/* Demo Access Section */}
           <View style={styles.demoSection}>
-            <Text style={styles.demoTitle}>🚀 Demo Access Available</Text>
+            <View style={styles.demoHeader}>
+              <Text style={styles.demoTitle}>🚀 Demo Access Available</Text>
+              <Text style={styles.demoBadge}>LIVE DEMO</Text>
+            </View>
             <Text style={styles.demoSubtitle}>
               Explore the full ConnectCare AI experience with our interactive demos
             </Text>
@@ -144,10 +147,20 @@ export default function WelcomeScreen() {
                   router.push('/dashboard');
                 }}
               >
-                <Stethoscope color={Colors.accent} size={24} />
-                <Text style={styles.demoAccountType}>Doctor Dashboard</Text>
-                <Text style={styles.demoAccountDescription}>View the complete doctor interface with patient monitoring, AI insights, and real-time alerts.</Text>
-                <ArrowRight color={Colors.textSecondary} size={20} />
+                <View style={[styles.demoIconContainer, { backgroundColor: `${Colors.accent}${Colors.opacity.light}` }]}>
+                  <Stethoscope color={Colors.accent} size={24} />
+                </View>
+                <View style={styles.demoContentWrapper}>
+                  <View style={styles.demoTextContent}>
+                    <Text style={styles.demoAccountType}>Doctor Dashboard</Text>
+                    <Text style={styles.demoAccountDescription}>
+                      Complete doctor interface with patient monitoring, AI insights, and real-time alerts
+                    </Text>
+                  </View>
+                  <View style={styles.demoArrowContainer}>
+                    <ArrowRight color={Colors.accent} size={20} />
+                  </View>
+                </View>
               </TouchableOpacity>
               
               <TouchableOpacity 
@@ -157,10 +170,20 @@ export default function WelcomeScreen() {
                   router.push('/(tabs)');
                 }}
               >
-                <User color={Colors.success} size={24} />
-                <Text style={styles.demoAccountType}>Patient Interface</Text>
-                <Text style={styles.demoAccountDescription}>Experience the patient-focused tabs with health monitoring, AI chat, and profile management.</Text>
-                <ArrowRight color={Colors.textSecondary} size={20} />
+                <View style={[styles.demoIconContainer, { backgroundColor: `${Colors.success}${Colors.opacity.light}` }]}>
+                  <User color={Colors.success} size={24} />
+                </View>
+                <View style={styles.demoContentWrapper}>
+                  <View style={styles.demoTextContent}>
+                    <Text style={styles.demoAccountType}>Patient Interface</Text>
+                    <Text style={styles.demoAccountDescription}>
+                      Patient-focused experience with health monitoring, AI chat, and profile management
+                    </Text>
+                  </View>
+                  <View style={styles.demoArrowContainer}>
+                    <ArrowRight color={Colors.success} size={20} />
+                  </View>
+                </View>
               </TouchableOpacity>
               
               <TouchableOpacity 
@@ -170,10 +193,20 @@ export default function WelcomeScreen() {
                   router.push('/(auth)/signin');
                 }}
               >
-                <User color={Colors.primary} size={24} />
-                <Text style={styles.demoAccountType}>Sign In / Sign Up</Text>
-                <Text style={styles.demoAccountDescription}>Create an account or sign in to access personalized features and save your health data.</Text>
-                <ArrowRight color={Colors.textSecondary} size={20} />
+                <View style={[styles.demoIconContainer, { backgroundColor: `${Colors.primary}${Colors.opacity.light}` }]}>
+                  <User color={Colors.primary} size={24} />
+                </View>
+                <View style={styles.demoContentWrapper}>
+                  <View style={styles.demoTextContent}>
+                    <Text style={styles.demoAccountType}>Sign In / Sign Up</Text>
+                    <Text style={styles.demoAccountDescription}>
+                      Create an account or sign in to access personalized features and save your health data
+                    </Text>
+                  </View>
+                  <View style={styles.demoArrowContainer}>
+                    <ArrowRight color={Colors.primary} size={20} />
+                  </View>
+                </View>
               </TouchableOpacity>
             </View>
           </View>
@@ -412,18 +445,34 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 24,
     elevation: 8,
+    borderWidth: 1,
+    borderColor: `${Colors.primary}${Colors.opacity.light}`,
+  },
+  demoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
   },
   demoTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '800',
     color: Colors.textPrimary,
-    textAlign: 'center',
-    marginBottom: 8,
+    flex: 1,
+  },
+  demoBadge: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: Colors.primary,
+    backgroundColor: `${Colors.primary}${Colors.opacity.light}`,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   demoSubtitle: {
     fontSize: 14,
     color: Colors.textSecondary,
-    textAlign: 'center',
     marginBottom: 24,
     lineHeight: 20,
   },
@@ -432,34 +481,56 @@ const styles = StyleSheet.create({
   },
   demoAccountCard: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     backgroundColor: Colors.background,
     borderRadius: 16,
-    padding: 16,
+    padding: 20,
     borderWidth: 1,
-    borderColor: `${Colors.textSecondary}${Colors.opacity.light}`,
+    borderColor: `${Colors.textSecondary}${Colors.opacity.medium}`,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 3,
+    gap: 16,
   },
-  demoIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  demoIconContainer: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  demoAccountInfo: {
+  demoContentWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  demoTextContent: {
     flex: 1,
   },
+  demoArrowContainer: {
+    marginTop: 2,
+    padding: 4,
+  },
   demoAccountType: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
     color: Colors.textPrimary,
-    marginBottom: 4,
+    marginBottom: 6,
+    lineHeight: 22,
   },
   demoAccountDescription: {
-    fontSize: 12,
+    fontSize: 13,
     color: Colors.textSecondary,
-    lineHeight: 16,
+    lineHeight: 18,
+    fontWeight: '500',
   },
   statsSection: {
     paddingHorizontal: 24,
