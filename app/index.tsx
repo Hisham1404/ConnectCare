@@ -145,8 +145,10 @@ export default function WelcomeScreen() {
                 }}
               >
                 <Stethoscope color={Colors.accent} size={24} />
-                <Text style={styles.demoAccountType}>Doctor Dashboard</Text>
-                <Text style={styles.demoAccountDescription}>View the complete doctor interface with patient monitoring, AI insights, and real-time alerts.</Text>
+                <View style={styles.demoAccountTextContent}>
+                  <Text style={styles.demoAccountType}>Doctor Dashboard</Text>
+                  <Text style={styles.demoAccountDescription}>View the complete doctor interface with patient monitoring, AI insights, and real-time alerts.</Text>
+                </View>
                 <ArrowRight color={Colors.textSecondary} size={20} />
               </TouchableOpacity>
               
@@ -158,8 +160,10 @@ export default function WelcomeScreen() {
                 }}
               >
                 <User color={Colors.success} size={24} />
-                <Text style={styles.demoAccountType}>Patient Interface</Text>
-                <Text style={styles.demoAccountDescription}>Experience the patient-focused tabs with health monitoring, AI chat, and profile management.</Text>
+                <View style={styles.demoAccountTextContent}>
+                  <Text style={styles.demoAccountType}>Patient Interface</Text>
+                  <Text style={styles.demoAccountDescription}>Experience the patient-focused tabs with health monitoring, AI chat, and profile management.</Text>
+                </View>
                 <ArrowRight color={Colors.textSecondary} size={20} />
               </TouchableOpacity>
               
@@ -171,8 +175,10 @@ export default function WelcomeScreen() {
                 }}
               >
                 <User color={Colors.primary} size={24} />
-                <Text style={styles.demoAccountType}>Sign In / Sign Up</Text>
-                <Text style={styles.demoAccountDescription}>Create an account or sign in to access personalized features and save your health data.</Text>
+                <View style={styles.demoAccountTextContent}>
+                  <Text style={styles.demoAccountType}>Sign In / Sign Up</Text>
+                  <Text style={styles.demoAccountDescription}>Create an account or sign in to access personalized features and save your health data.</Text>
+                </View>
                 <ArrowRight color={Colors.textSecondary} size={20} />
               </TouchableOpacity>
             </View>
@@ -431,13 +437,17 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   demoAccountCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: Colors.background,
     borderRadius: 16,
     padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: `${Colors.textSecondary}${Colors.opacity.light}`,
+  },
+  demoAccountTextContent: {
+    flex: 1,
+    marginHorizontal: 12,
   },
   demoIcon: {
     width: 48,
