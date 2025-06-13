@@ -22,7 +22,12 @@ export default function DashboardHeader({
     <View style={styles.header}>
       {showBackButton && (
         <FeedbackButton
-          onPress={onBackPress || (() => {})}
+          onPress={() => {
+            console.log('Dashboard back button pressed');
+            if (onBackPress) {
+              onBackPress();
+            }
+          }}
           style={styles.backButton}
         >
           <ArrowLeft color="#6b7280" size={24} />

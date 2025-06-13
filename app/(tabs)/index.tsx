@@ -318,7 +318,10 @@ export default function PatientDashboard() {
       {/* Header */}
       <View style={styles.header}>
         <FeedbackButton
-          onPress={() => router.replace('/')}
+          onPress={() => {
+            console.log('Back button pressed - navigating to home');
+            router.replace('/');
+          }}
           style={styles.backButton}
         >
           <ArrowLeft color={Colors.textSecondary} size={24} />

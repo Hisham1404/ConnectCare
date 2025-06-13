@@ -42,7 +42,7 @@ export default function FeedbackButton({
   const handlePress = () => {
     if (disabled) return;
 
-    console.log('FeedbackButton pressed');
+    console.log('FeedbackButton pressed', onPress);
 
     // Haptic feedback for mobile platforms
     if (hapticFeedback && Platform.OS !== 'web') {
