@@ -2,6 +2,7 @@ import React from 'react';
 import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Image, RefreshControl } from 'react-native';
 import { TriangleAlert as AlertTriangle, Calendar, TrendingUp, TrendingDown } from 'lucide-react-native';
 import CompactStats from '../CompactStats';
+import { shadow } from '@/utils/shadowStyle';
 
 interface OverviewTabProps {
   dashboardStats: any;
@@ -159,11 +160,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    ...shadow(2),
   },
   appointmentAvatar: {
     width: 40,
@@ -209,11 +206,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    ...shadow(2),
   },
   metricValue: {
     fontSize: 16,

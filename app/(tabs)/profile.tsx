@@ -9,8 +9,9 @@ import {
   Switch,
   Dimensions,
 } from 'react-native';
-import { User, Settings, Bell, Shield, CircleHelp as HelpCircle, CreditCard as Edit3, Award, Activity, Users, Calendar, ChevronRight, Star, TrendingUp, Heart, Pill, FileText, Phone, MapPin, Clock, Target, Zap, Download, Share, Camera, CircleCheck as CheckCircle, Stethoscope, ArrowLeft } from 'lucide-react-native';
+import { User, Settings, Bell, Shield, CircleHelp as HelpCircle, CreditCard as Edit3, Award, Activity, Users, Calendar, ChevronRight, Star, TrendingUp, Heart, Pill, FileText, Phone, MapPin, Clock, Target, Zap, Download, Share, Camera, CircleCheck as CheckCircle, Stethoscope, ArrowLeft, LogOut } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { useAuth } from '../../hooks/useAuth';
 
 const { width } = Dimensions.get('window');
 
@@ -27,6 +28,15 @@ export default function ProfileScreen() {
     phone: '+91 98765 43220',
     role: 'patient',
     avatar_url: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+  };
+
+  const { signOut, profile } = useAuth();
+
+  const handleSignOut = async () => {
+    const { error } = await signOut();
+    if (!error) {
+      router.replace('/');
+    }
   };
 
   // Patient-specific data
@@ -111,7 +121,9 @@ export default function ProfileScreen() {
   };
 
   const menuItems = [
-    { icon: Stethoscope, label: 'Switch to Doctor Dashboard', color: '#3b82f6', hasArrow: true, onPress: handleSwitchToDoctorDashboard },
+    ...(profile?.role === 'doctor'
+      ? [{ icon: Stethoscope, label: 'Switch to Doctor Dashboard', color: '#3b82f6', hasArrow: true, onPress: handleSwitchToDoctorDashboard }]
+      : []),
     { icon: Edit3, label: 'Edit Profile', color: '#3b82f6', hasArrow: true },
     { icon: FileText, label: 'Medical Records', color: '#10b981', hasArrow: true },
     { icon: Pill, label: 'Medications', color: '#f59e0b', hasArrow: true },
@@ -120,6 +132,7 @@ export default function ProfileScreen() {
     { icon: Shield, label: 'Privacy & Security', color: '#6b7280', hasArrow: true },
     { icon: Settings, label: 'App Settings', color: '#374151', hasArrow: true },
     { icon: HelpCircle, label: 'Help & Support', color: '#06b6d4', hasArrow: true },
+    { icon: LogOut, label: 'Sign Out', color: '#ef4444', hasArrow: false, onPress: handleSignOut },
   ];
 
   return (
@@ -128,12 +141,14 @@ export default function ProfileScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>Profile</Text>
         <View style={styles.headerActions}>
-          <TouchableOpacity 
-            style={styles.dashboardButton}
-            onPress={handleSwitchToDoctorDashboard}
-          >
-            <Stethoscope color="#3b82f6" size={20} />
-          </TouchableOpacity>
+          {profile?.role === 'doctor' && (
+            <TouchableOpacity 
+              style={styles.dashboardButton}
+              onPress={handleSwitchToDoctorDashboard}
+            >
+              <Stethoscope color="#3b82f6" size={20} />
+            </TouchableOpacity>
+          )}
           <TouchableOpacity style={styles.editButton}>
             <Edit3 color="#3b82f6" size={20} />
           </TouchableOpacity>
@@ -310,7 +325,7 @@ export default function ProfileScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Settings & Support</Text>
         {menuItems.map((item, index) => (
-          <TouchableOpacity key={index} style={styles.menuItem}>
+          <TouchableOpacity key={index} style={styles.menuItem} onPress={item.onPress}>
             <View style={styles.menuLeft}>
               <View style={[styles.menuIcon, { backgroundColor: `${item.color}15` }]}>
                 <item.icon color={item.color} size={20} />

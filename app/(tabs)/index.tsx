@@ -9,6 +9,8 @@ import {
   Dimensions,
   RefreshControl,
   FlatList,
+  LogBox,
+  Platform,
 } from 'react-native';
 import { Pill, Heart, Activity, Calendar, Clock, User, TrendingUp, CircleAlert as AlertCircle, CircleCheck as CheckCircle, Apple, Dumbbell, Thermometer, Droplets, Zap, Target, Award, Bell, Phone, Video, MessageSquare, Plus, ChevronRight, ArrowLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
@@ -16,8 +18,17 @@ import { Colors, SemanticColors } from '../../constants/Colors';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import FeedbackButton from '../../components/ui/FeedbackButton';
+import { shadow, textShadow } from '@/utils/shadowStyle';
 
 const { width } = Dimensions.get('window');
+
+// Silence remaining deprecation warnings until all styles are migrated
+if (Platform.OS === 'web') {
+  LogBox.ignoreLogs([
+    '"shadow*" style props are deprecated',
+    '"textShadow*" style props are deprecated',
+  ]);
+}
 
 export default function PatientDashboard() {
   const [refreshing, setRefreshing] = useState(false);
@@ -816,11 +827,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderRadius: 16,
     padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    ...shadow(2),
   },
   progressHeader: {
     flexDirection: 'row',
@@ -837,9 +844,7 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: '900',
     color: Colors.primary,
-    textShadowColor: `${Colors.primary}${Colors.opacity.light}`,
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    ...textShadow(`${Colors.primary}${Colors.opacity.light}`, 2),
   },
   progressBarContainer: {
     marginBottom: 20,
@@ -881,11 +886,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     width: 140,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    ...shadow(2),
   },
   medicationCarouselHeader: {
     flexDirection: 'row',
@@ -934,11 +935,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     width: 160,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    ...shadow(2),
   },
   recommendationCarouselHeader: {
     flexDirection: 'row',

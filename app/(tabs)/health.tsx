@@ -13,6 +13,11 @@ import { Colors } from '../../constants/Colors';
 import FeedbackButton from '../../components/ui/FeedbackButton';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
+import { Redirect } from 'expo-router';
+import { useAuth } from '@/hooks/useAuth';
+import { healthMetrics as mockHealthMetrics, healthGoals as mockHealthGoals, recentReadings as mockRecentReadings } from '@/mock/data';
+import MetricCard from '@/components/health/MetricCard';
+import GoalCard from '@/components/health/GoalCard';
 
 const { width } = Dimensions.get('window');
 
@@ -38,160 +43,9 @@ export default function HealthScreen() {
     { key: '3months', label: '3 Months' },
   ];
 
-  const healthMetrics = [
-    {
-      id: '1',
-      label: 'Heart Rate',
-      value: '72',
-      unit: 'BPM',
-      icon: Heart,
-      color: Colors.heartRate,
-      trend: 'stable',
-      change: '+2%',
-      normal: '60-100',
-      lastReading: '2 min ago',
-      readings: [68, 70, 72, 75, 73, 71, 72],
-    },
-    {
-      id: '2',
-      label: 'Blood Pressure',
-      value: '120/80',
-      unit: 'mmHg',
-      icon: Activity,
-      color: Colors.bloodPressure,
-      trend: 'improving',
-      change: '-5%',
-      normal: '120/80',
-      lastReading: '1 hour ago',
-      readings: [130, 128, 125, 122, 120, 118, 120],
-    },
-    {
-      id: '3',
-      label: 'Temperature',
-      value: '98.6',
-      unit: '°F',
-      icon: Thermometer,
-      color: Colors.temperature,
-      trend: 'stable',
-      change: '0%',
-      normal: '98.6',
-      lastReading: '3 hours ago',
-      readings: [98.4, 98.6, 98.8, 98.7, 98.6, 98.5, 98.6],
-    },
-    {
-      id: '4',
-      label: 'Oxygen Level',
-      value: '98',
-      unit: '%',
-      icon: Droplets,
-      color: Colors.oxygen,
-      trend: 'stable',
-      change: '+1%',
-      normal: '95-100',
-      lastReading: '1 hour ago',
-      readings: [97, 98, 97, 98, 99, 98, 98],
-    },
-    {
-      id: '5',
-      label: 'Weight',
-      value: '78.5',
-      unit: 'kg',
-      icon: Weight,
-      color: Colors.accent,
-      trend: 'declining',
-      change: '-2%',
-      normal: '75-80',
-      lastReading: '1 day ago',
-      readings: [80, 79.5, 79, 78.8, 78.5, 78.3, 78.5],
-    },
-    {
-      id: '6',
-      label: 'Pain Level',
-      value: '3',
-      unit: '/10',
-      icon: Zap,
-      color: Colors.warning,
-      trend: 'improving',
-      change: '-40%',
-      normal: '0-2',
-      lastReading: '4 hours ago',
-      readings: [8, 7, 6, 5, 4, 3, 3],
-    },
-  ];
-
-  const healthGoals = [
-    {
-      id: '1',
-      title: 'Daily Steps',
-      current: 8500,
-      target: 10000,
-      unit: 'steps',
-      progress: 85,
-      icon: Target,
-      color: Colors.accent,
-    },
-    {
-      id: '2',
-      title: 'Water Intake',
-      current: 6,
-      target: 8,
-      unit: 'glasses',
-      progress: 75,
-      icon: Droplets,
-      color: Colors.oxygen,
-    },
-    {
-      id: '3',
-      title: 'Sleep Duration',
-      current: 7.5,
-      target: 8,
-      unit: 'hours',
-      progress: 94,
-      icon: Clock,
-      color: Colors.accent,
-    },
-    {
-      id: '4',
-      title: 'Exercise Time',
-      current: 25,
-      target: 30,
-      unit: 'minutes',
-      progress: 83,
-      icon: Activity,
-      color: Colors.success,
-    },
-  ];
-
-  const recentReadings = [
-    {
-      id: '1',
-      type: 'Blood Pressure',
-      value: '120/80 mmHg',
-      time: '1 hour ago',
-      status: 'normal',
-    },
-    {
-      id: '2',
-      type: 'Heart Rate',
-      value: '72 BPM',
-      time: '2 min ago',
-      status: 'normal',
-    },
-    {
-      id: '3',
-      type: 'Temperature',
-      value: '98.6°F',
-      time: '3 hours ago',
-      status: 'normal',
-    },
-    {
-      id: '4',
-      type: 'Weight',
-      value: '78.5 kg',
-      time: '1 day ago',
-      status: 'normal',
-    },
-  ];
+  const healthMetrics = mockHealthMetrics;
+  const healthGoals = mockHealthGoals;
+  const recentReadings = mockRecentReadings;
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -252,6 +106,12 @@ export default function HealthScreen() {
     );
   };
 
+  // NAVIGATION GUARD: Only patients who are signed in
+  const { user, loading: authLoading } = useAuth();
+  if (!authLoading && !user) {
+    return <Redirect href="/(auth)/signin" />;
+  }
+
   return (
     <ScrollView 
       style={styles.container}
@@ -308,44 +168,13 @@ export default function HealthScreen() {
               <SkeletonLoader width={(width - 56) / 2} height={200} borderRadius={20} />
             </>
           ) : (
-            healthMetrics.map((metric) => {
-              const TrendIcon = getTrendIcon(metric.trend);
-              const trendColor = getTrendColor(metric.trend);
-              
-              return (
-                <FeedbackButton 
-                  key={metric.id} 
-                  onPress={() => console.log('Metric pressed:', metric.label)}
-                  style={styles.enhancedMetricCard}
-                >
-                  <View style={styles.metricCardHeader}>
-                    <View style={[styles.metricIcon, { backgroundColor: `${metric.color}${Colors.opacity.light}` }]}>
-                      <metric.icon color={metric.color} size={24} />
-                    </View>
-                    <View style={styles.metricTrend}>
-                      <TrendIcon color={trendColor} size={16} />
-                      <Text style={[styles.metricChange, { color: trendColor }]}>
-                        {metric.change}
-                      </Text>
-                    </View>
-                  </View>
-                  
-                  <Text style={styles.enhancedMetricValue}>
-                    {metric.value}
-                    <Text style={styles.enhancedMetricUnit}> {metric.unit}</Text>
-                  </Text>
-                  <Text style={styles.metricLabel}>{metric.label}</Text>
-                  <Text style={styles.metricNormal}>Normal: {metric.normal}</Text>
-                  
-                  {/* Enhanced Mini Chart */}
-                  <View style={styles.enhancedChartContainer}>
-                    {renderMiniChart(metric.readings, metric.color)}
-                  </View>
-                  
-                  <Text style={styles.metricLastReading}>{metric.lastReading}</Text>
-                </FeedbackButton>
-              );
-            })
+            healthMetrics.map((metric) => (
+              <MetricCard
+                key={metric.id}
+                metric={metric}
+                renderMiniChart={renderMiniChart}
+              />
+            ))
           )}
         </View>
       </View>
@@ -364,41 +193,9 @@ export default function HealthScreen() {
             <>
               <SkeletonLoader width={(width - 52) / 2} height={120} borderRadius={16} />
               <SkeletonLoader width={(width - 52) / 2} height={120} borderRadius={16} />
-              <SkeletonLoader width={(width - 52) / 2} height={120} borderRadius={16} />
-              <SkeletonLoader width={(width - 52) / 2} height={120} borderRadius={16} />
             </>
           ) : (
-            healthGoals.map((goal) => (
-              <FeedbackButton
-                key={goal.id}
-                onPress={() => console.log('Goal pressed:', goal.title)}
-                style={styles.goalCard}
-              >
-                <View style={styles.goalHeader}>
-                  <View style={[styles.goalIcon, { backgroundColor: `${goal.color}${Colors.opacity.light}` }]}>
-                    <goal.icon color={goal.color} size={18} />
-                  </View>
-                  <Text style={styles.goalProgress}>{goal.progress}%</Text>
-                </View>
-                
-                <Text style={styles.goalTitle}>{goal.title}</Text>
-                <Text style={styles.goalValue}>
-                  {goal.current} / {goal.target} {goal.unit}
-                </Text>
-                
-                <View style={styles.goalProgressBar}>
-                  <View 
-                    style={[
-                      styles.goalProgressFill,
-                      { 
-                        width: `${goal.progress}%`,
-                        backgroundColor: goal.color 
-                      }
-                    ]} 
-                  />
-                </View>
-              </FeedbackButton>
-            ))
+            healthGoals.map((goal) => <GoalCard key={goal.id} goal={goal} />)
           )}
         </View>
       </View>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Link, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Heart, Mail, Lock, Eye, EyeOff, ArrowLeft, User, Phone } from 'lucide-react-native';
+import { Heart, Mail, Lock, Eye, EyeOff, ArrowLeft, User } from 'lucide-react-native';
 import { useAuth } from '../../hooks/useAuth';
 import { Colors } from '../../constants/Colors';
 import FeedbackButton from '../../components/ui/FeedbackButton';
@@ -21,7 +21,6 @@ export default function SignUpScreen() {
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
-    phone: '',
     password: '',
     confirmPassword: '',
   });
@@ -31,10 +30,10 @@ export default function SignUpScreen() {
   const [error, setError] = useState('');
   const [userRole, setUserRole] = useState<'patient' | 'doctor'>('patient');
 
-  const { signUp } = useAuth();
+  const { signUp, profile } = useAuth();
 
   const handleSignUp = async () => {
-    const { fullName, email, phone, password, confirmPassword } = formData;
+    const { fullName, email, password, confirmPassword } = formData;
 
     if (!fullName || !email || !password || !confirmPassword) {
       setError('Please fill in all required fields');
@@ -56,7 +55,6 @@ export default function SignUpScreen() {
 
     const { error } = await signUp(email, password, {
       full_name: fullName,
-      phone: phone,
       role: userRole,
     });
 
@@ -66,12 +64,35 @@ export default function SignUpScreen() {
     } else {
       // Show success message and navigate
       setLoading(false);
-      router.replace('/(tabs)');
+      router.replace('/(auth)/signin?checkEmail=true');
     }
   };
 
+  useEffect(() => {
+    if (profile) {
+      if (profile.role === 'doctor') {
+        router.replace('/dashboard');
+      } else {
+        router.replace('/(tabs)');
+      }
+    }
+  }, [profile]);
+
   const updateFormData = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleBack = () => {
+    try {
+      // @ts-ignore expo-router exposes canGoBack in v5
+      if (router.canGoBack && router.canGoBack()) {
+        router.back();
+      } else {
+        router.push('/');
+      }
+    } catch {
+      router.push('/');
+    }
   };
 
   return (
@@ -89,7 +110,7 @@ export default function SignUpScreen() {
         {/* Header */}
         <View style={styles.header}>
           <FeedbackButton
-            onPress={() => router.back()}
+            onPress={handleBack}
             style={styles.backButton}
           >
             <ArrowLeft color={Colors.textSecondary} size={24} />
@@ -182,23 +203,6 @@ export default function SignUpScreen() {
                 onChangeText={(value) => updateFormData('email', value)}
                 keyboardType="email-address"
                 autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
-          </View>
-
-          {/* Phone Input */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Phone Number</Text>
-            <View style={styles.inputWrapper}>
-              <Phone color={Colors.textSecondary} size={20} />
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your phone number"
-                placeholderTextColor={Colors.textTertiary}
-                value={formData.phone}
-                onChangeText={(value) => updateFormData('phone', value)}
-                keyboardType="phone-pad"
                 autoCorrect={false}
               />
             </View>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { Colors } from '../../constants/Colors';
 import FeedbackButton from '../../components/ui/FeedbackButton';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { Profile } from '@/types/models';
 
 export default function SignInScreen() {
   const [email, setEmail] = useState('');
@@ -25,7 +26,7 @@ export default function SignInScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const { signIn } = useAuth();
+  const { signIn, profile } = useAuth();
 
   const handleSignIn = async () => {
     if (!email || !password) {
@@ -42,7 +43,6 @@ export default function SignInScreen() {
       setError(error.message);
       setLoading(false);
     } else {
-      // Navigation will be handled by the auth state change
       setLoading(false);
     }
   };
@@ -51,6 +51,29 @@ export default function SignInScreen() {
     // Navigate to main app without authentication for demo purposes
     router.replace('/(tabs)');
   };
+
+  const handleBack = () => {
+    try {
+      if (router.canGoBack && router.canGoBack()) {
+        router.back();
+      } else {
+        router.push('/');
+      }
+    } catch {
+      router.push('/');
+    }
+  };
+
+  // Navigate when profile is available
+  useEffect(() => {
+    if (!loading && profile) {
+      if (profile.role === 'doctor') {
+        router.replace('/dashboard');
+      } else {
+        router.replace('/(tabs)');
+      }
+    }
+  }, [profile]);
 
   return (
     <KeyboardAvoidingView 
@@ -67,7 +90,7 @@ export default function SignInScreen() {
         {/* Header */}
         <View style={styles.header}>
           <FeedbackButton
-            onPress={() => router.back()}
+            onPress={handleBack}
             style={styles.backButton}
           >
             <ArrowLeft color={Colors.textSecondary} size={24} />

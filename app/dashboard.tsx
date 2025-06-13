@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { router } from 'expo-router';
+import { router, Redirect } from 'expo-router';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import { useAuth } from '@/hooks/useAuth';
+import { dashboardStats as mockDashboardStats, patients as mockPatients, todaysAppointments as mockTodaysAppointments } from '@/mock/data';
 
 // Import components
 import DashboardHeader from '../components/dashboard/DashboardHeader';
@@ -32,99 +34,10 @@ export default function DoctorDashboard() {
     avatar_url: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
   };
 
-  // Mock dashboard data
-  const [dashboardStats] = useState({
-    totalPatients: 12,
-    criticalCases: 2,
-    stablePatients: 8,
-    pendingReviews: 3,
-    dailyCheckins: 8,
-    activeMonitoring: 5,
-  });
-
-  const [patients] = useState([
-    {
-      id: 'patient-1',
-      name: 'Rajesh Kumar',
-      age: 58,
-      condition: 'Post-Cardiac Surgery',
-      priority: 'stable',
-      lastCheckin: '2 hours ago',
-      avatar: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-      vitals: {
-        heartRate: '72',
-        bloodPressure: '120/80',
-        temperature: '98.6',
-        oxygen: '98',
-      },
-      recoveryStage: 'Week 2',
-      riskScore: 25,
-      hasNewCheckin: false,
-    },
-    {
-      id: 'patient-2',
-      name: 'Priya Sharma',
-      age: 45,
-      condition: 'Hip Replacement',
-      priority: 'critical',
-      lastCheckin: '30 minutes ago',
-      avatar: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-      vitals: {
-        heartRate: '88',
-        bloodPressure: '140/90',
-        temperature: '99.2',
-        oxygen: '96',
-      },
-      recoveryStage: 'Week 1',
-      riskScore: 75,
-      hasNewCheckin: true,
-    },
-    {
-      id: 'patient-3',
-      name: 'Amit Patel',
-      age: 62,
-      condition: 'Gallbladder Surgery',
-      priority: 'moderate',
-      lastCheckin: '1 hour ago',
-      avatar: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-      vitals: {
-        heartRate: '76',
-        bloodPressure: '130/85',
-        temperature: '98.8',
-        oxygen: '97',
-      },
-      recoveryStage: 'Week 3',
-      riskScore: 45,
-      hasNewCheckin: false,
-    },
-  ]);
-
-  const [todaysAppointments] = useState([
-    {
-      id: '1',
-      patientName: 'Rajesh Kumar',
-      time: '10:30 AM',
-      type: 'Follow-up',
-      status: 'confirmed',
-      avatar: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-    },
-    {
-      id: '2',
-      patientName: 'Priya Sharma',
-      time: '2:00 PM',
-      type: 'Consultation',
-      status: 'pending',
-      avatar: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-    },
-    {
-      id: '3',
-      patientName: 'Amit Patel',
-      time: '4:30 PM',
-      type: 'Check-up',
-      status: 'confirmed',
-      avatar: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-    },
-  ]);
+  // Replace inline mock data with shared fixtures
+  const [dashboardStats] = useState(mockDashboardStats);
+  const [patients] = useState(mockPatients);
+  const [todaysAppointments] = useState(mockTodaysAppointments);
 
   // Simulate loading
   useEffect(() => {
@@ -147,6 +60,12 @@ export default function DoctorDashboard() {
     console.log('Switching to patient mode');
     // Navigate to patient interface
   };
+
+  // NAVIGATION GUARD: redirect unauthenticated users
+  const { user, loading: authLoading } = useAuth();
+  if (!authLoading && !user) {
+    return <Redirect href="/(auth)/signin" />;
+  }
 
   // Show loading state while data is being fetched
   if (loading) {

@@ -1,6 +1,8 @@
 import React from 'react';
 import { ScrollView, View, Text, StyleSheet, TouchableOpacity, RefreshControl } from 'react-native';
-import { Bell, Users, Settings } from 'lucide-react-native';
+import { Bell, Users, Settings, LogOut } from 'lucide-react-native';
+import { useAuth } from '@/hooks/useAuth';
+import { router } from 'expo-router';
 
 interface SettingsTabProps {
   refreshing: boolean;
@@ -8,6 +10,15 @@ interface SettingsTabProps {
 }
 
 export default function SettingsTab({ refreshing, onRefresh }: SettingsTabProps) {
+  const { signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    const { error } = await signOut();
+    if (!error) {
+      router.replace('/');
+    }
+  };
+
   return (
     <ScrollView 
       style={styles.container}
@@ -40,6 +51,15 @@ export default function SettingsTab({ refreshing, onRefresh }: SettingsTabProps)
         <Text style={styles.settingDescription}>General application settings</Text>
         <TouchableOpacity style={styles.settingButton}>
           <Text style={styles.settingButtonText}>Configure</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={[styles.settingCard, { borderColor: '#ef4444' }]}> 
+        <LogOut color="#ef4444" size={24} />
+        <Text style={styles.settingTitle}>Sign Out</Text>
+        <Text style={styles.settingDescription}>Log out of your account</Text>
+        <TouchableOpacity style={[styles.settingButton, { backgroundColor: '#ef4444' }]} onPress={handleSignOut}>
+          <Text style={styles.settingButtonText}>Sign Out</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
