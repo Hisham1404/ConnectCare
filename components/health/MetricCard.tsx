@@ -66,7 +66,7 @@ const MetricCard: React.FC<Props> = ({ metric, renderMiniChart }) => {
 
 const styles = StyleSheet.create({
   card: {
-    flex: 1,
+    width: (width - 52) / 2,
     backgroundColor: Colors.surface,
     borderRadius: 20,
     padding: 16,

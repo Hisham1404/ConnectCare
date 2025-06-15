@@ -388,7 +388,7 @@ const styles = StyleSheet.create({
   metricsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 16,
+    justifyContent: 'space-between',
   },
   enhancedMetricCard: {
     backgroundColor: Colors.surface,
