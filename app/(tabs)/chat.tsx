@@ -66,6 +66,9 @@ export default function ChatScreen() {
           get_battery_level={tools.get_battery_level}
           change_brightness={tools.change_brightness}
           flash_screen={tools.flash_screen}
+          addMessage={addMessage}
+          clearTranscript={clearTranscript}
+          setIsRecording={setIsRecording}
         />
       </View>
       <StatusBar style="light" />
