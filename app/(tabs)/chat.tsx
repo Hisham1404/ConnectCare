@@ -8,7 +8,7 @@ import tools from '../../utils/tools';
 import { useTranscript } from '../../context/TranscriptContext';
 
 export default function ChatScreen() {
-  const { transcript, clearTranscript, isRecording } = useTranscript();
+  const { transcript, clearTranscript, isRecording, addMessage, setIsRecording } = useTranscript();
 
   return (
     <SafeAreaView style={styles.container}>
