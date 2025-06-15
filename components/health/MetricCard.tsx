@@ -1,9 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { TrendingUp, TrendingDown } from 'lucide-react-native';
 import { Colors } from '@/constants/Colors';
 import { HealthMetric } from '@/types/models';
 import { shadow } from '@/utils/shadowStyle';
+
+const { width } = Dimensions.get('window');
 
 interface Props {
   metric: HealthMetric;
@@ -124,4 +126,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default MetricCard; 
+export default MetricCard;
