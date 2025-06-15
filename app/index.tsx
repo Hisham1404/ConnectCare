@@ -9,6 +9,7 @@ import {
   Dimensions,
   Animated,
   Platform,
+  Linking,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Heart, ArrowRight, Shield, Users, Zap } from 'lucide-react-native';
@@ -21,6 +22,8 @@ export default function LandingPage() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
+  const badgeAnim = useRef(new Animated.Value(0.1)).current;
+  const badgePulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     Animated.parallel([
@@ -40,15 +43,84 @@ export default function LandingPage() {
         useNativeDriver: true,
       }),
     ]).start();
+
+    // Badge intro animation with delay
+    setTimeout(() => {
+      Animated.sequence([
+        Animated.timing(badgeAnim, {
+          toValue: 1.1,
+          duration: 350,
+          useNativeDriver: true,
+        }),
+        Animated.timing(badgeAnim, {
+          toValue: 1,
+          duration: 350,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        // Start pulse animation after intro
+        startPulseAnimation();
+      });
+    }, 1000);
   }, []);
+
+  const startPulseAnimation = () => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(badgePulseAnim, {
+          toValue: 1.05,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(badgePulseAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  };
 
   const handleGetStarted = () => {
     router.push('/(auth)/signin');
   };
 
+  const handleBoltBadgePress = () => {
+    if (Platform.OS === 'web') {
+      window.open('https://bolt.new/', '_blank');
+    } else {
+      Linking.openURL('https://bolt.new/');
+    }
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar style="dark" />
+      
+      {/* Bolt.new Badge */}
+      <Animated.View 
+        style={[
+          styles.boltBadgeContainer,
+          {
+            opacity: fadeAnim,
+            transform: [
+              { scale: Animated.multiply(badgeAnim, badgePulseAnim) }
+            ]
+          }
+        ]}
+      >
+        <TouchableOpacity
+          onPress={handleBoltBadgePress}
+          style={styles.boltBadgeButton}
+          activeOpacity={0.8}
+        >
+          <Image
+            source={{ uri: 'https://storage.bolt.army/black_circle_360x360.png' }}
+            style={styles.boltBadgeImage}
+            resizeMode="cover"
+          />
+        </TouchableOpacity>
+      </Animated.View>
       
       <ScrollView 
         style={styles.scrollView}
@@ -220,6 +292,25 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FAFBFC',
+  },
+  boltBadgeContainer: {
+    position: 'absolute',
+    top: Platform.OS === 'web' ? 16 : 60,
+    right: 16,
+    zIndex: 50,
+  },
+  boltBadgeButton: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    borderRadius: Platform.OS === 'web' ? 56 : 40,
+  },
+  boltBadgeImage: {
+    width: Platform.OS === 'web' ? 112 : 80,
+    height: Platform.OS === 'web' ? 112 : 80,
+    borderRadius: Platform.OS === 'web' ? 56 : 40,
   },
   scrollView: {
     flex: 1,
