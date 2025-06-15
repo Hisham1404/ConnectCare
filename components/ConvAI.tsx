@@ -116,3 +116,5 @@ const styles = StyleSheet.create({
     transform: [{ translateY: 2 }] 
   },
 });
+
+export default ConvAiDOMComponent
