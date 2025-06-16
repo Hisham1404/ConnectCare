@@ -1,6 +1,6 @@
 import React from 'react';
-import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Image, RefreshControl } from 'react-native';
-import { TriangleAlert as AlertTriangle, Calendar, TrendingUp, TrendingDown } from 'lucide-react-native';
+import { ScrollView, View, Text, StyleSheet, TouchableOpacity, RefreshControl } from 'react-native';
+import { TriangleAlert as AlertTriangle, Calendar, TrendingUp, TrendingDown, User } from 'lucide-react-native';
 import CompactStats from '../CompactStats';
 import { shadow } from '@/utils/shadowStyle';
 
@@ -60,7 +60,9 @@ export default function OverviewTab({
         
         {todaysAppointments.map((appointment) => (
           <View key={appointment.id} style={styles.appointmentCard}>
-            <Image source={{ uri: appointment.avatar }} style={styles.appointmentAvatar} />
+                          <View style={styles.appointmentAvatar}>
+                <User size={16} color="#ffffff" />
+              </View>
             <View style={styles.appointmentInfo}>
               <Text style={styles.appointmentPatient}>{appointment.patientName}</Text>
               <Text style={styles.appointmentType}>{appointment.type}</Text>
@@ -167,6 +169,9 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     marginRight: 12,
+    backgroundColor: '#3b82f6',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   appointmentInfo: {
     flex: 1,

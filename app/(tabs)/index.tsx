@@ -19,8 +19,20 @@ import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import FeedbackButton from '../../components/ui/FeedbackButton';
 import { shadow, textShadow } from '@/utils/shadowStyle';
+import { useAuth } from '../../hooks/useAuth';
+import { patients } from '@/mock/data';
+import { supabase } from '@/lib/supabase';
 
 const { width } = Dimensions.get('window');
+
+// Define types for health data
+interface HealthMetric {
+  id: string;
+  type: string;
+  value: string;
+  unit: string;
+  created_at: string;
+}
 
 // Silence remaining deprecation warnings until all styles are migrated
 if (Platform.OS === 'web') {
@@ -33,26 +45,157 @@ if (Platform.OS === 'web') {
 export default function PatientDashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [healthMetrics, setHealthMetrics] = useState<HealthMetric[]>([]);
+  const [nextAppointment, setNextAppointment] = useState<any>(null);
+  const { profile, loading } = useAuth();
 
-  // Mock profile data
-  const mockProfile = {
-    id: 'demo-patient-id',
-    email: 'patient@connectcare.ai',
-    full_name: 'Rajesh Kumar',
-    phone: '+91 98765 43220',
-    role: 'patient',
-    avatar_url: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+  // Fetch health metrics from database
+  const fetchHealthMetrics = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('health_metrics')
+        .select('*')
+        .eq('patient_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (err) {
+      console.error('Error fetching health metrics:', err);
+      return [];
+    }
   };
 
-  // Simulate data loading
+  // Fetch patient's next appointment from doctor's appointments
+  const fetchPatientAppointment = async (patientId: string) => {
+    try {
+      // First, get the patient's doctor information
+      const { data: patientData, error: patientError } = await supabase
+        .from('profiles')
+        .select('doctor_id')
+        .eq('id', patientId)
+        .single();
+
+      if (patientError || !patientData?.doctor_id) {
+        console.log('No doctor assigned to patient');
+        return null;
+      }
+
+      // Get doctor's profile information
+      const { data: doctorData, error: doctorError } = await supabase
+        .from('profiles')
+        .select('full_name, email')
+        .eq('id', patientData.doctor_id)
+        .single();
+
+      if (doctorError) {
+        console.error('Error fetching doctor data:', doctorError);
+        return null;
+      }
+
+      // Generate appointment data with doctor's real name
+      const appointmentTimes = ['10:30 AM', '2:00 PM', '4:30 PM', '11:00 AM', '3:15 PM'];
+      const appointmentTypes = ['Follow-up', 'Consultation', 'Check-up', 'Post-op Review', 'Routine Visit'];
+      const appointmentDates = [
+        'December 15, 2024',
+        'December 18, 2024', 
+        'December 20, 2024',
+        'December 22, 2024',
+        'December 25, 2024'
+      ];
+
+      // Use patient ID hash to consistently assign same appointment details
+      const patientHash = patientId.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+      const timeIndex = patientHash % appointmentTimes.length;
+      const typeIndex = patientHash % appointmentTypes.length;
+      const dateIndex = patientHash % appointmentDates.length;
+
+      return {
+        id: `appointment-${patientId}`,
+        doctor: doctorData.full_name || 'Dr. Unknown',
+        specialty: 'Cardiothoracic Surgeon', // Hardcoded as requested
+        date: appointmentDates[dateIndex],
+        time: appointmentTimes[timeIndex],
+        type: appointmentTypes[typeIndex],
+        location: 'Apollo Hospital, Mumbai', // Hardcoded as requested
+        avatar: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        isVideoCall: patientHash % 2 === 0, // Randomly assign video call based on patient
+      };
+    } catch (err) {
+      console.error('Error fetching patient appointment:', err);
+      return null;
+    }
+  };
+
+  // Simulate data loading and fetch health metrics
   useEffect(() => {
     const loadData = async () => {
+      if (profile?.id) {
+        try {
+          const [metricsData, appointmentData] = await Promise.all([
+            fetchHealthMetrics(profile.id),
+            fetchPatientAppointment(profile.id)
+          ]);
+          
+          setHealthMetrics(metricsData);
+          setNextAppointment(appointmentData);
+        } catch (err) {
+          console.error('Error loading health data:', err);
+        }
+      }
+      
       await new Promise(resolve => setTimeout(resolve, 1500));
       setIsLoadingData(false);
     };
     
-    loadData();
-  }, []);
+    if (profile?.id) {
+      loadData();
+    } else if (!loading) {
+      setIsLoadingData(false);
+    }
+  }, [profile?.id, loading]);
+
+  // Show loading if either auth or data is loading
+  if (loading || isLoadingData) {
+    return (
+      <View style={styles.loadingContainer}>
+        <LoadingSpinner size="large" />
+        <Text style={styles.loadingText}>Loading your dashboard...</Text>
+      </View>
+    );
+  }
+
+  // Get the most recent metrics for key health indicators
+  const getLatestMetricByType = (type: string) => {
+    return healthMetrics.find(metric => metric.type.toLowerCase() === type.toLowerCase());
+  };
+
+  const keyHealthMetrics = [
+    {
+      type: 'Heart Rate',
+      icon: Heart,
+      color: Colors.heartRate,
+      data: getLatestMetricByType('Heart Rate')
+    },
+    {
+      type: 'Blood Pressure',
+      icon: Activity,
+      color: Colors.bloodPressure,
+      data: getLatestMetricByType('Blood Pressure')
+    },
+    {
+      type: 'Temperature',
+      icon: Thermometer,
+      color: Colors.temperature,
+      data: getLatestMetricByType('Temperature')
+    },
+    {
+      type: 'Oxygen Level',
+      icon: Droplets,
+      color: Colors.oxygen,
+      data: getLatestMetricByType('Oxygen Level')
+    }
+  ].filter(metric => metric.data); // Only show metrics that have data
 
   // Mock patient data
   const todaysMedications = [
@@ -94,63 +237,7 @@ export default function PatientDashboard() {
     },
   ];
 
-  const healthMetrics = [
-    {
-      id: '1',
-      label: 'Heart Rate',
-      value: '72',
-      unit: 'BPM',
-      icon: Heart,
-      color: Colors.heartRate,
-      status: 'normal',
-      trend: 'stable',
-      lastUpdated: '2 min ago',
-    },
-    {
-      id: '2',
-      label: 'Blood Pressure',
-      value: '120/80',
-      unit: 'mmHg',
-      icon: Activity,
-      color: Colors.bloodPressure,
-      status: 'normal',
-      trend: 'improving',
-      lastUpdated: '1 hour ago',
-    },
-    {
-      id: '3',
-      label: 'Temperature',
-      value: '98.6',
-      unit: '°F',
-      icon: Thermometer,
-      color: Colors.temperature,
-      status: 'normal',
-      trend: 'stable',
-      lastUpdated: '3 hours ago',
-    },
-    {
-      id: '4',
-      label: 'Oxygen Level',
-      value: '98',
-      unit: '%',
-      icon: Droplets,
-      color: Colors.oxygen,
-      status: 'excellent',
-      trend: 'stable',
-      lastUpdated: '1 hour ago',
-    },
-  ];
 
-  const nextAppointment = {
-    doctor: 'Dr. Rajesh Kumar',
-    specialty: 'Cardiothoracic Surgeon',
-    date: 'December 15, 2024',
-    time: '10:30 AM',
-    type: 'Follow-up Consultation',
-    location: 'Apollo Hospital, Mumbai',
-    avatar: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-    isVideoCall: true,
-  };
 
   const healthRecommendations = [
     {
@@ -215,6 +302,21 @@ export default function PatientDashboard() {
 
   const onRefresh = async () => {
     setRefreshing(true);
+    
+    if (profile?.id) {
+      try {
+        const [metricsData, appointmentData] = await Promise.all([
+          fetchHealthMetrics(profile.id),
+          fetchPatientAppointment(profile.id)
+        ]);
+        
+        setHealthMetrics(metricsData);
+        setNextAppointment(appointmentData);
+      } catch (err) {
+        console.error('Error refreshing health data:', err);
+      }
+    }
+    
     setTimeout(() => setRefreshing(false), 1000);
   };
 
@@ -347,10 +449,9 @@ export default function PatientDashboard() {
             {isLoadingData ? (
               <SkeletonLoader width={48} height={48} borderRadius={24} style={styles.avatar} />
             ) : (
-              <Image 
-                source={{ uri: mockProfile?.avatar_url }} 
-                style={styles.avatar} 
-              />
+              <View style={styles.avatar}>
+                <User size={24} color="#ffffff" />
+              </View>
             )}
             <View>
               {isLoadingData ? (
@@ -362,7 +463,7 @@ export default function PatientDashboard() {
               ) : (
                 <>
                   <Text style={styles.greeting}>Good Morning</Text>
-                  <Text style={styles.userName}>{mockProfile?.full_name}</Text>
+                  <Text style={styles.userName}>{profile?.full_name || 'Patient'}</Text>
                   <Text style={styles.healthStatus}>Day 12 of recovery</Text>
                 </>
               )}
@@ -470,11 +571,14 @@ export default function PatientDashboard() {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>My Health Metrics</Text>
           <FeedbackButton
-            onPress={() => console.log('Log health metrics')}
-            style={styles.addButton}
+            onPress={() => {
+              console.log('Navigate to health tab');
+              router.push('/(tabs)/health');
+            }}
+            style={styles.viewAllButton}
           >
-            <Plus color={Colors.accent} size={16} />
-            <Text style={styles.addButtonText}>Log</Text>
+            <Text style={styles.viewAllText}>View All</Text>
+            <ChevronRight color={Colors.accent} size={16} />
           </FeedbackButton>
         </View>
         
@@ -486,43 +590,56 @@ export default function PatientDashboard() {
               <SkeletonLoader width={(width - 52) / 2} height={140} borderRadius={16} />
               <SkeletonLoader width={(width - 52) / 2} height={140} borderRadius={16} />
             </>
-          ) : (
-            healthMetrics.map((metric) => {
-              const TrendIcon = getTrendIcon(metric.trend);
-              return (
-                <FeedbackButton
-                  key={metric.id}
-                  onPress={() => console.log('Metric pressed:', metric.label)}
-                  style={styles.metricCard}
-                >
-                  <View style={styles.metricHeader}>
-                    <View style={[styles.metricIcon, { backgroundColor: `${metric.color}${Colors.opacity.light}` }]}>
-                      <metric.icon color={metric.color} size={20} />
-                    </View>
-                    <TrendIcon color={getStatusColor(metric.status)} size={16} />
+          ) : keyHealthMetrics.length > 0 ? (
+            keyHealthMetrics.map((metric) => (
+              <FeedbackButton
+                key={metric.data?.id}
+                onPress={() => {
+                  console.log('Metric pressed:', metric.type);
+                  router.push('/(tabs)/health');
+                }}
+                style={styles.metricCard}
+              >
+                <View style={styles.metricHeader}>
+                  <View style={[styles.metricIcon, { backgroundColor: `${metric.color}${Colors.opacity.light}` }]}>
+                    <metric.icon color={metric.color} size={20} />
                   </View>
-                  
-                  <Text style={styles.metricValue}>
-                    {metric.value}
-                    <Text style={styles.metricUnit}> {metric.unit}</Text>
-                  </Text>
-                  <Text style={styles.metricLabel}>{metric.label}</Text>
-                  <Text style={styles.metricLastUpdated}>{metric.lastUpdated}</Text>
-                  
-                  <View style={[
-                    styles.metricStatus,
-                    { backgroundColor: `${getStatusColor(metric.status)}${Colors.opacity.light}` }
+                  <CheckCircle color={Colors.success} size={16} />
+                </View>
+                
+                <Text style={styles.metricValue}>
+                  {metric.data?.value}
+                  <Text style={styles.metricUnit}> {metric.data?.unit}</Text>
+                </Text>
+                <Text style={styles.metricLabel}>{metric.type}</Text>
+                <Text style={styles.metricLastUpdated}>
+                  {metric.data?.created_at ? new Date(metric.data.created_at).toLocaleTimeString() : 'No data'}
+                </Text>
+                
+                <View style={[
+                  styles.metricStatus,
+                  { backgroundColor: `${Colors.success}${Colors.opacity.light}` }
+                ]}>
+                  <Text style={[
+                    styles.metricStatusText,
+                    { color: Colors.success }
                   ]}>
-                    <Text style={[
-                      styles.metricStatusText,
-                      { color: getStatusColor(metric.status) }
-                    ]}>
-                      {metric.status.toUpperCase()}
-                    </Text>
-                  </View>
-                </FeedbackButton>
-              );
-            })
+                    NORMAL
+                  </Text>
+                </View>
+              </FeedbackButton>
+            ))
+          ) : (
+            <View style={styles.emptyHealthMetrics}>
+              <Text style={styles.emptyHealthMetricsText}>No health metrics available</Text>
+              <Text style={styles.emptyHealthMetricsSubtext}>Start tracking your health metrics</Text>
+              <FeedbackButton
+                onPress={() => router.push('/(tabs)/health')}
+                style={styles.startTrackingButton}
+              >
+                <Text style={styles.startTrackingText}>Start Tracking</Text>
+              </FeedbackButton>
+            </View>
           )}
         </View>
       </View>
@@ -533,10 +650,12 @@ export default function PatientDashboard() {
         
         {isLoadingData ? (
           <SkeletonLoader width="100%" height={180} borderRadius={16} />
-        ) : (
+        ) : nextAppointment ? (
           <View style={styles.appointmentCard}>
             <View style={styles.appointmentHeader}>
-              <Image source={{ uri: nextAppointment.avatar }} style={styles.doctorAvatar} />
+              <View style={styles.doctorAvatar}>
+                <User size={24} color="#ffffff" />
+              </View>
               <View style={styles.appointmentInfo}>
                 <Text style={styles.doctorName}>{nextAppointment.doctor}</Text>
                 <Text style={styles.doctorSpecialty}>{nextAppointment.specialty}</Text>
@@ -584,9 +703,26 @@ export default function PatientDashboard() {
                 style={styles.appointmentPrimaryButton}
               >
                 <Video color="#ffffff" size={16} />
-                <Text style={styles.appointmentPrimaryText}>Join Video Call</Text>
+                <Text style={styles.appointmentPrimaryText}>
+                  {nextAppointment.isVideoCall ? 'Join Video Call' : 'View Details'}
+                </Text>
               </FeedbackButton>
             </View>
+          </View>
+        ) : (
+          <View style={styles.noAppointmentCard}>
+            <Calendar color={Colors.textSecondary} size={48} />
+            <Text style={styles.noAppointmentTitle}>No Upcoming Appointments</Text>
+            <Text style={styles.noAppointmentText}>
+              You don't have any scheduled appointments at the moment.
+            </Text>
+            <FeedbackButton
+              onPress={() => console.log('Schedule appointment')}
+              style={styles.scheduleButton}
+            >
+              <Plus color="#ffffff" size={16} />
+              <Text style={styles.scheduleButtonText}>Schedule Appointment</Text>
+            </FeedbackButton>
           </View>
         )}
       </View>
@@ -731,6 +867,9 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
+    backgroundColor: '#3b82f6',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   greeting: {
     fontSize: 14,
@@ -1072,6 +1211,9 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
     marginRight: 12,
+    backgroundColor: '#3b82f6',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   appointmentInfo: {
     flex: 1,
@@ -1147,6 +1289,45 @@ const styles = StyleSheet.create({
     color: Colors.surface,
     fontWeight: '600',
   },
+  noAppointmentCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    padding: 32,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  noAppointmentTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  noAppointmentText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  scheduleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  scheduleButtonText: {
+    fontSize: 14,
+    color: Colors.surface,
+    fontWeight: '600',
+  },
   quickActionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -1177,5 +1358,58 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.textPrimary,
     textAlign: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8fafc',
+    gap: 16,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+  viewAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  viewAllText: {
+    fontSize: 14,
+    color: Colors.accent,
+    fontWeight: '600',
+  },
+  emptyHealthMetrics: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  emptyHealthMetricsText: {
+    fontSize: 16,
+    color: Colors.textSecondary,
+    fontWeight: '500',
+    marginBottom: 12,
+  },
+  emptyHealthMetricsSubtext: {
+    fontSize: 12,
+    color: Colors.textTertiary,
+    fontWeight: '500',
+  },
+  startTrackingButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: Colors.accent,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  startTrackingText: {
+    fontSize: 12,
+    color: Colors.surface,
+    fontWeight: '600',
   },
 });

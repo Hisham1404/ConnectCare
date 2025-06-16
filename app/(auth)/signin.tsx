@@ -47,10 +47,7 @@ export default function SignInScreen() {
     }
   };
 
-  const handleDemoAccess = () => {
-    // Navigate to main app without authentication for demo purposes
-    router.replace('/(tabs)');
-  };
+
 
   const handleBack = () => {
     try {
@@ -186,16 +183,7 @@ export default function SignInScreen() {
             )}
           </FeedbackButton>
 
-          {/* Demo Access */}
-          <View style={styles.demoContainer}>
-            <Text style={styles.demoText}>Want to explore without signing up?</Text>
-            <FeedbackButton
-              onPress={handleDemoAccess}
-              style={styles.demoButton}
-            >
-              <Text style={styles.demoButtonText}>Try Demo Mode</Text>
-            </FeedbackButton>
-          </View>
+
 
           {/* Sign Up Link */}
           <View style={styles.signUpContainer}>
@@ -359,31 +347,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
-  demoContainer: {
-    alignItems: 'center',
-    marginBottom: 32,
-    paddingVertical: 20,
-    borderTopWidth: 1,
-    borderTopColor: `${Colors.textSecondary}${Colors.opacity.light}`,
-  },
-  demoText: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    marginBottom: 12,
-  },
-  demoButton: {
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderWidth: 1,
-    borderColor: `${Colors.accent}${Colors.opacity.medium}`,
-  },
-  demoButtonText: {
-    color: Colors.accent,
-    fontSize: 14,
-    fontWeight: '600',
-  },
+
   signUpContainer: {
     flexDirection: 'row',
     justifyContent: 'center',

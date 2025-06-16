@@ -1,8 +1,24 @@
-import React from 'react';
-import { View, ScrollView, TouchableOpacity, Text, StyleSheet, Image, RefreshControl, Dimensions } from 'react-native';
-import { Play, Pause, Heart, Activity, Target, Monitor } from 'lucide-react-native';
+import React, { useState, useEffect } from 'react';
+import { View, ScrollView, TouchableOpacity, Text, StyleSheet, RefreshControl, Dimensions } from 'react-native';
+import { Play, Pause, Heart, Activity, Target, Monitor, User } from 'lucide-react-native';
+import { supabase } from '@/lib/supabase';
 
 const { width } = Dimensions.get('window');
+
+interface HealthMetric {
+  id: string;
+  type: string;
+  value: string;
+  unit: string;
+  created_at: string;
+}
+
+interface PatientVitals {
+  heartRate: string;
+  bloodPressure: string;
+  temperature: string;
+  oxygenLevel: string;
+}
 
 interface MonitoringTabProps {
   patients: any[];
@@ -23,6 +39,132 @@ export default function MonitoringTab({
   onSelectPatient,
   onRefresh
 }: MonitoringTabProps) {
+  const [patientVitals, setPatientVitals] = useState<PatientVitals>({
+    heartRate: '--',
+    bloodPressure: '--',
+    temperature: '--',
+    oxygenLevel: '--'
+  });
+  const [vitalsTrends, setVitalsTrends] = useState<{[key: string]: number[]}>({
+    heartRate: [],
+    bloodPressure: [],
+    temperature: [],
+    oxygenLevel: []
+  });
+  const [loadingVitals, setLoadingVitals] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch patient health metrics from database
+  const fetchPatientVitals = async (patientId: string) => {
+    if (!patientId) return;
+    
+    setLoadingVitals(true);
+    setError(null);
+    
+    try {
+      const { data, error } = await supabase
+        .from('health_metrics')
+        .select('*')
+        .eq('patient_id', patientId)
+        .order('created_at', { ascending: false })
+        .limit(50); // Get recent metrics for trends
+
+      if (error) throw error;
+
+      // Process the data to get latest vitals and trends
+      const vitals: PatientVitals = {
+        heartRate: '--',
+        bloodPressure: '--',
+        temperature: '--',
+        oxygenLevel: '--'
+      };
+
+      const trends: {[key: string]: number[]} = {
+        heartRate: [],
+        bloodPressure: [],
+        temperature: [],
+        oxygenLevel: []
+      };
+
+      if (data && data.length > 0) {
+        // Get the latest value for each metric type
+        const heartRateMetrics = data.filter(m => m.type.toLowerCase() === 'heart rate');
+        const bloodPressureMetrics = data.filter(m => m.type.toLowerCase() === 'blood pressure');
+        const temperatureMetrics = data.filter(m => m.type.toLowerCase() === 'temperature');
+        const oxygenMetrics = data.filter(m => m.type.toLowerCase() === 'oxygen level');
+
+        // Set latest values
+        if (heartRateMetrics.length > 0) {
+          vitals.heartRate = heartRateMetrics[0].value;
+          trends.heartRate = heartRateMetrics.slice(0, 7).map(m => parseFloat(m.value)).reverse();
+        }
+        if (bloodPressureMetrics.length > 0) {
+          vitals.bloodPressure = bloodPressureMetrics[0].value;
+          // For blood pressure, extract systolic for trend chart
+          trends.bloodPressure = bloodPressureMetrics.slice(0, 7)
+            .map(m => parseFloat(m.value.split('/')[0]) || 120).reverse();
+        }
+        if (temperatureMetrics.length > 0) {
+          vitals.temperature = temperatureMetrics[0].value;
+          trends.temperature = temperatureMetrics.slice(0, 7).map(m => parseFloat(m.value)).reverse();
+        }
+        if (oxygenMetrics.length > 0) {
+          vitals.oxygenLevel = oxygenMetrics[0].value;
+          trends.oxygenLevel = oxygenMetrics.slice(0, 7).map(m => parseFloat(m.value)).reverse();
+        }
+      }
+
+      // Fill trends with mock data if not enough real data points (for demo purposes)
+      Object.keys(trends).forEach(key => {
+        if (trends[key].length < 7) {
+          const currentValue = parseFloat(vitals[key as keyof PatientVitals]) || 0;
+          if (currentValue > 0) {
+            trends[key] = Array.from({ length: 7 }, (_, i) => {
+              const variation = (Math.random() - 0.5) * (currentValue * 0.1);
+              return Math.max(currentValue + variation, currentValue * 0.8);
+            });
+          }
+        }
+      });
+
+      setPatientVitals(vitals);
+      setVitalsTrends(trends);
+    } catch (err) {
+      console.error('Error fetching patient vitals:', err);
+      setError('Failed to load patient vitals');
+      // Set default values on error
+      setPatientVitals({
+        heartRate: '--',
+        bloodPressure: '--',
+        temperature: '--',
+        oxygenLevel: '--'
+      });
+    } finally {
+      setLoadingVitals(false);
+    }
+  };
+
+  // Load vitals when selected patient changes
+  useEffect(() => {
+    if (selectedPatientForMonitoring) {
+      fetchPatientVitals(selectedPatientForMonitoring);
+    }
+  }, [selectedPatientForMonitoring]);
+
+  // Refresh vitals when monitoring is active (simulate real-time updates)
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (isMonitoring && selectedPatientForMonitoring) {
+      interval = setInterval(() => {
+        fetchPatientVitals(selectedPatientForMonitoring);
+      }, 10000); // Refresh every 10 seconds when monitoring is active
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isMonitoring, selectedPatientForMonitoring]);
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -32,6 +174,49 @@ export default function MonitoringTab({
       default: return '#6b7280';
     }
   };
+
+  const handleRefresh = async () => {
+    await onRefresh();
+    if (selectedPatientForMonitoring) {
+      await fetchPatientVitals(selectedPatientForMonitoring);
+    }
+  };
+
+  // Define vitals configuration with real data
+  const vitalsConfig = [
+    { 
+      label: 'Heart Rate', 
+      value: patientVitals.heartRate, 
+      unit: 'BPM', 
+      icon: Heart, 
+      color: '#ef4444', 
+      trend: vitalsTrends.heartRate 
+    },
+    { 
+      label: 'Blood Pressure', 
+      value: patientVitals.bloodPressure, 
+      unit: 'mmHg', 
+      icon: Activity, 
+      color: '#3b82f6', 
+      trend: vitalsTrends.bloodPressure 
+    },
+    { 
+      label: 'Temperature', 
+      value: patientVitals.temperature, 
+      unit: '°F', 
+      icon: Target, 
+      color: '#f59e0b', 
+      trend: vitalsTrends.temperature 
+    },
+    { 
+      label: 'Oxygen Sat', 
+      value: patientVitals.oxygenLevel, 
+      unit: '%', 
+      icon: Monitor, 
+      color: '#10b981', 
+      trend: vitalsTrends.oxygenLevel 
+    },
+  ];
 
   return (
     <View style={styles.container}>
@@ -68,7 +253,9 @@ export default function MonitoringTab({
               ]}
               onPress={() => onSelectPatient(patient.id)}
             >
-              <Image source={{ uri: patient.avatar }} style={styles.selectorAvatar} />
+              <View style={styles.selectorAvatar}>
+                <User size={16} color="#ffffff" />
+              </View>
               <Text style={styles.selectorName}>{patient.name.split(' ')[0]}</Text>
               <View style={[
                 styles.selectorPriority,
@@ -82,18 +269,25 @@ export default function MonitoringTab({
       {/* Live Vitals */}
       <ScrollView 
         style={styles.vitalsContainer}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={<RefreshControl refreshing={refreshing || loadingVitals} onRefresh={handleRefresh} />}
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.vitalsTitle}>Real-time Vitals</Text>
         
+        {error && (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity 
+              style={styles.retryButton} 
+              onPress={() => selectedPatientForMonitoring && fetchPatientVitals(selectedPatientForMonitoring)}
+            >
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        
         <View style={styles.vitalsGrid}>
-          {[
-            { label: 'Heart Rate', value: '72', unit: 'BPM', icon: Heart, color: '#ef4444', trend: [68, 70, 72, 75, 73, 71, 72] },
-            { label: 'Blood Pressure', value: '120/80', unit: 'mmHg', icon: Activity, color: '#3b82f6', trend: [130, 128, 125, 122, 120, 118, 120] },
-            { label: 'Temperature', value: '98.6', unit: '°F', icon: Target, color: '#f59e0b', trend: [98.4, 98.6, 98.8, 98.7, 98.6, 98.5, 98.6] },
-            { label: 'Oxygen Sat', value: '98', unit: '%', icon: Monitor, color: '#10b981', trend: [97, 98, 97, 98, 99, 98, 98] },
-          ].map((vital, index) => (
+          {vitalsConfig.map((vital, index) => (
             <View key={index} style={styles.vitalCard}>
               <View style={styles.vitalCardHeader}>
                 <View style={[styles.vitalIcon, { backgroundColor: `${vital.color}15` }]}>
@@ -120,7 +314,7 @@ export default function MonitoringTab({
               
               {/* Mini Chart */}
               <View style={styles.miniChart}>
-                {vital.trend.map((value, i) => {
+                {vital.trend.length > 0 ? vital.trend.map((value, i) => {
                   const maxValue = Math.max(...vital.trend);
                   const minValue = Math.min(...vital.trend);
                   const range = maxValue - minValue || 1;
@@ -138,11 +332,39 @@ export default function MonitoringTab({
                       ]}
                     />
                   );
-                })}
+                }) : (
+                  // Show placeholder bars when no data
+                  Array.from({ length: 7 }).map((_, i) => (
+                    <View
+                      key={i}
+                      style={[
+                        styles.chartBar,
+                        {
+                          height: 10,
+                          backgroundColor: '#e5e7eb',
+                          opacity: 0.5,
+                        }
+                      ]}
+                    />
+                  ))
+                )}
               </View>
             </View>
           ))}
         </View>
+
+        {/* Show selected patient info */}
+        {selectedPatientForMonitoring && patients.length > 0 && (
+          <View style={styles.selectedPatientInfo}>
+            <Text style={styles.selectedPatientTitle}>
+              Monitoring: {patients.find(p => p.id === selectedPatientForMonitoring)?.name || 'Unknown Patient'}
+            </Text>
+            <Text style={styles.selectedPatientSubtitle}>
+              Status: {patients.find(p => p.id === selectedPatientForMonitoring)?.priority || 'Unknown'} • 
+              Last updated: {new Date().toLocaleTimeString()}
+            </Text>
+          </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -211,6 +433,9 @@ const styles = StyleSheet.create({
     height: 28,
     borderRadius: 14,
     marginBottom: 3,
+    backgroundColor: '#3b82f6',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   selectorName: {
     fontSize: 9,
@@ -231,6 +456,31 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1f2937',
     marginBottom: 12,
+  },
+  errorContainer: {
+    backgroundColor: '#fef2f2',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  errorText: {
+    color: '#dc2626',
+    fontSize: 14,
+    flex: 1,
+  },
+  retryButton: {
+    backgroundColor: '#dc2626',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  retryButtonText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '600',
   },
   vitalsGrid: {
     flexDirection: 'row',
@@ -295,5 +545,27 @@ const styles = StyleSheet.create({
   chartBar: {
     flex: 1,
     borderRadius: 1,
+  },
+  selectedPatientInfo: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 16,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  selectedPatientTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1f2937',
+    marginBottom: 4,
+  },
+  selectedPatientSubtitle: {
+    fontSize: 12,
+    color: '#6b7280',
   },
 });

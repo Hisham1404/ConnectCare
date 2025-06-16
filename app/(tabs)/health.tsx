@@ -15,26 +15,103 @@ import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import { Redirect } from 'expo-router';
 import { useAuth } from '@/hooks/useAuth';
-import { healthMetrics as mockHealthMetrics, healthGoals as mockHealthGoals, recentReadings as mockRecentReadings } from '@/mock/data';
+import { supabase } from '@/lib/supabase';
 import MetricCard from '@/components/health/MetricCard';
 import GoalCard from '@/components/health/GoalCard';
 
 const { width } = Dimensions.get('window');
 
+// Define types for our data
+interface HealthMetric {
+  id: string;
+  type: string;
+  value: string;
+  unit: string;
+  created_at: string;
+}
+
+interface HealthGoal {
+  id: string;
+  title: string;
+  description: string;
+  status: string;
+  created_at: string;
+}
+
 export default function HealthScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState('week');
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [healthMetrics, setHealthMetrics] = useState<HealthMetric[]>([]);
+  const [healthGoals, setHealthGoals] = useState<HealthGoal[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
-  // Simulate data loading
+  const { user, loading: authLoading } = useAuth();
+
+  // Fetch health metrics from database
+  const fetchHealthMetrics = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('health_metrics')
+        .select('*')
+        .eq('patient_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (err) {
+      console.error('Error fetching health metrics:', err);
+      setError('Failed to load health metrics');
+      return [];
+    }
+  };
+
+  // Fetch health goals from database
+  const fetchHealthGoals = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('health_goals')
+        .select('*')
+        .eq('patient_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (err) {
+      console.error('Error fetching health goals:', err);
+      setError('Failed to load health goals');
+      return [];
+    }
+  };
+
+  // Load data when user is available
   useEffect(() => {
     const loadData = async () => {
-      await new Promise(resolve => setTimeout(resolve, 1200));
-      setIsLoadingData(false);
+      if (!user?.id) return;
+      
+      setIsLoadingData(true);
+      setError(null);
+      
+      try {
+        const [metricsData, goalsData] = await Promise.all([
+          fetchHealthMetrics(user.id),
+          fetchHealthGoals(user.id)
+        ]);
+        
+        setHealthMetrics(metricsData);
+        setHealthGoals(goalsData);
+      } catch (err) {
+        console.error('Error loading health data:', err);
+        setError('Failed to load health data');
+      } finally {
+        setIsLoadingData(false);
+      }
     };
     
-    loadData();
-  }, []);
+    if (user?.id) {
+      loadData();
+    }
+  }, [user?.id]);
 
   const periods = [
     { key: 'day', label: 'Day' },
@@ -43,13 +120,26 @@ export default function HealthScreen() {
     { key: '3months', label: '3 Months' },
   ];
 
-  const healthMetrics = mockHealthMetrics;
-  const healthGoals = mockHealthGoals;
-  const recentReadings = mockRecentReadings;
-
   const onRefresh = async () => {
+    if (!user?.id) return;
+    
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1000);
+    setError(null);
+    
+    try {
+      const [metricsData, goalsData] = await Promise.all([
+        fetchHealthMetrics(user.id),
+        fetchHealthGoals(user.id)
+      ]);
+      
+      setHealthMetrics(metricsData);
+      setHealthGoals(goalsData);
+    } catch (err) {
+      console.error('Error refreshing health data:', err);
+      setError('Failed to refresh health data');
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const getTrendIcon = (trend: string) => {
@@ -76,6 +166,28 @@ export default function HealthScreen() {
       case 'warning': return Colors.warning;
       case 'critical': return Colors.error;
       default: return Colors.textSecondary;
+    }
+  };
+
+  const getMetricIcon = (type: string) => {
+    switch (type.toLowerCase()) {
+      case 'heart rate': return Heart;
+      case 'blood pressure': return Activity;
+      case 'temperature': return Thermometer;
+      case 'oxygen level': return Droplets;
+      case 'weight': return Weight;
+      default: return Activity;
+    }
+  };
+
+  const getMetricColor = (type: string) => {
+    switch (type.toLowerCase()) {
+      case 'heart rate': return Colors.heartRate;
+      case 'blood pressure': return Colors.bloodPressure;
+      case 'temperature': return Colors.temperature;
+      case 'oxygen level': return Colors.oxygen;
+      case 'weight': return Colors.accent;
+      default: return Colors.accent;
     }
   };
 
@@ -106,10 +218,48 @@ export default function HealthScreen() {
     );
   };
 
+  // Transform database metrics to match the expected format
+  const transformedMetrics = healthMetrics.map(metric => ({
+    id: metric.id,
+    label: metric.type,
+    value: metric.value,
+    unit: metric.unit,
+    icon: getMetricIcon(metric.type),
+    color: getMetricColor(metric.type),
+    trend: 'stable', // Default trend - you can enhance this later
+    change: '0%', // Default change - you can enhance this later
+    normal: 'Normal', // Default normal range - you can enhance this later
+    lastReading: new Date(metric.created_at).toLocaleString(),
+    readings: [70, 72, 75, 73, 71, 74, parseInt(metric.value) || 0], // Mock readings for chart
+  }));
+
+  // Transform database goals to match the expected format
+  const transformedGoals = healthGoals.map(goal => ({
+    id: goal.id,
+    title: goal.title,
+    current: goal.status === 'completed' ? 100 : 75, // Mock progress
+    target: 100,
+    unit: 'progress',
+    progress: goal.status === 'completed' ? 100 : 75,
+    icon: Target,
+    color: goal.status === 'completed' ? Colors.success : Colors.accent,
+    description: goal.description,
+    status: goal.status,
+  }));
+
   // NAVIGATION GUARD: Only patients who are signed in
-  const { user, loading: authLoading } = useAuth();
   if (!authLoading && !user) {
     return <Redirect href="/(auth)/signin" />;
+  }
+
+  // Show loading spinner while auth is loading
+  if (authLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <LoadingSpinner size="large" />
+        <Text style={styles.loadingText}>Loading...</Text>
+      </View>
+    );
   }
 
   return (
@@ -128,6 +278,16 @@ export default function HealthScreen() {
           <Plus color={Colors.accent} size={20} />
         </FeedbackButton>
       </View>
+
+      {/* Error Message */}
+      {error && (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <FeedbackButton onPress={onRefresh} style={styles.retryButton}>
+            <Text style={styles.retryText}>Retry</Text>
+          </FeedbackButton>
+        </View>
+      )}
 
       {/* Enhanced Period Selector - Segmented Control */}
       <View style={styles.periodSelectorContainer}>
@@ -167,14 +327,19 @@ export default function HealthScreen() {
               <SkeletonLoader width={(width - 56) / 2} height={200} borderRadius={20} />
               <SkeletonLoader width={(width - 56) / 2} height={200} borderRadius={20} />
             </>
-          ) : (
-            healthMetrics.map((metric) => (
+          ) : transformedMetrics.length > 0 ? (
+            transformedMetrics.map((metric) => (
               <MetricCard
                 key={metric.id}
                 metric={metric}
                 renderMiniChart={renderMiniChart}
               />
             ))
+          ) : (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>No health metrics found</Text>
+              <Text style={styles.emptyStateSubtext}>Start tracking your health by adding some metrics</Text>
+            </View>
           )}
         </View>
       </View>
@@ -194,8 +359,13 @@ export default function HealthScreen() {
               <SkeletonLoader width={(width - 52) / 2} height={120} borderRadius={16} />
               <SkeletonLoader width={(width - 52) / 2} height={120} borderRadius={16} />
             </>
+          ) : transformedGoals.length > 0 ? (
+            transformedGoals.map((goal) => <GoalCard key={goal.id} goal={goal} />)
           ) : (
-            healthGoals.map((goal) => <GoalCard key={goal.id} goal={goal} />)
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>No health goals found</Text>
+              <Text style={styles.emptyStateSubtext}>Set some health goals to track your progress</Text>
+            </View>
           )}
         </View>
       </View>
@@ -216,8 +386,8 @@ export default function HealthScreen() {
             <SkeletonLoader width="100%" height={80} borderRadius={16} style={{ marginBottom: 12 }} />
             <SkeletonLoader width="100%" height={80} borderRadius={16} />
           </>
-        ) : (
-          recentReadings.map((reading) => (
+        ) : healthMetrics.length > 0 ? (
+          healthMetrics.slice(0, 4).map((reading) => (
             <FeedbackButton
               key={reading.id}
               onPress={() => console.log('Reading pressed:', reading.type)}
@@ -225,23 +395,28 @@ export default function HealthScreen() {
             >
               <View style={styles.readingInfo}>
                 <Text style={styles.readingType}>{reading.type}</Text>
-                <Text style={styles.readingValue}>{reading.value}</Text>
-                <Text style={styles.readingTime}>{reading.time}</Text>
+                <Text style={styles.readingValue}>{reading.value} {reading.unit}</Text>
+                <Text style={styles.readingTime}>{new Date(reading.created_at).toLocaleString()}</Text>
               </View>
               
               <View style={[
                 styles.readingStatus,
-                { backgroundColor: `${getStatusColor(reading.status)}${Colors.opacity.light}` }
+                { backgroundColor: `${Colors.success}${Colors.opacity.light}` }
               ]}>
                 <Text style={[
                   styles.readingStatusText,
-                  { color: getStatusColor(reading.status) }
+                  { color: Colors.success }
                 ]}>
-                  {reading.status.toUpperCase()}
+                  NORMAL
                 </Text>
               </View>
             </FeedbackButton>
           ))
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>No recent readings</Text>
+            <Text style={styles.emptyStateSubtext}>Your health readings will appear here</Text>
+          </View>
         )}
       </View>
 
@@ -299,6 +474,61 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.background,
+    gap: 16,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: Colors.textSecondary,
+    fontWeight: '500',
+  },
+  errorContainer: {
+    backgroundColor: `${Colors.error}${Colors.opacity.light}`,
+    margin: 20,
+    padding: 16,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  errorText: {
+    flex: 1,
+    color: Colors.error,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  retryButton: {
+    backgroundColor: Colors.error,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  retryText: {
+    color: Colors.surface,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    width: '100%',
+  },
+  emptyStateText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+    marginBottom: 8,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: Colors.textTertiary,
+    textAlign: 'center',
   },
   header: {
     flexDirection: 'row',
@@ -501,23 +731,29 @@ const styles = StyleSheet.create({
   },
   goalTitle: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
     color: Colors.textPrimary,
     marginBottom: 4,
   },
-  goalValue: {
+  goalCurrent: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: Colors.textPrimary,
+  },
+  goalTarget: {
     fontSize: 12,
     color: Colors.textSecondary,
-    marginBottom: 8,
+    fontWeight: '600',
   },
   goalProgressBar: {
-    height: 4,
+    height: 6,
     backgroundColor: `${Colors.textSecondary}${Colors.opacity.light}`,
-    borderRadius: 2,
+    borderRadius: 3,
+    marginTop: 8,
   },
   goalProgressFill: {
     height: '100%',
-    borderRadius: 2,
+    borderRadius: 3,
   },
   readingCard: {
     backgroundColor: Colors.surface,
@@ -525,8 +761,8 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -537,25 +773,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   readingType: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: Colors.textPrimary,
-    marginBottom: 2,
+    marginBottom: 4,
   },
   readingValue: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.accent,
+    fontSize: 14,
+    color: Colors.textSecondary,
     marginBottom: 2,
   },
   readingTime: {
     fontSize: 12,
-    color: Colors.textSecondary,
+    color: Colors.textTertiary,
   },
   readingStatus: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
   },
   readingStatusText: {
     fontSize: 10,
@@ -569,7 +804,7 @@ const styles = StyleSheet.create({
   quickActionCard: {
     backgroundColor: Colors.surface,
     borderRadius: 16,
-    padding: 16,
+    padding: 20,
     width: (width - 52) / 2,
     alignItems: 'center',
     shadowColor: '#000',
@@ -579,12 +814,12 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   quickActionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   quickActionTitle: {
     fontSize: 12,

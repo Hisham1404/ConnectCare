@@ -11,11 +11,12 @@ import {
 } from 'react-native';
 import { Link, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Heart, Mail, Lock, Eye, EyeOff, ArrowLeft, User } from 'lucide-react-native';
+import { Heart, Mail, Lock, Eye, EyeOff, ArrowLeft, User, Stethoscope } from 'lucide-react-native';
 import { useAuth } from '../../hooks/useAuth';
 import { Colors } from '../../constants/Colors';
 import FeedbackButton from '../../components/ui/FeedbackButton';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import DoctorSearchInput from '../../components/ui/DoctorSearchInput';
 
 export default function SignUpScreen() {
   const [formData, setFormData] = useState({
@@ -23,6 +24,7 @@ export default function SignUpScreen() {
     email: '',
     password: '',
     confirmPassword: '',
+    doctorId: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -33,7 +35,7 @@ export default function SignUpScreen() {
   const { signUp, profile } = useAuth();
 
   const handleSignUp = async () => {
-    const { fullName, email, password, confirmPassword } = formData;
+    const { fullName, email, password, confirmPassword, doctorId } = formData;
 
     if (!fullName || !email || !password || !confirmPassword) {
       setError('Please fill in all required fields');
@@ -53,10 +55,26 @@ export default function SignUpScreen() {
     setLoading(true);
     setError('');
 
-    const { error } = await signUp(email, password, {
+    console.log('📝 Form data before signup:', formData);
+    console.log('👤 User role:', userRole);
+    console.log('🆔 Doctor ID from form:', doctorId);
+
+    const profileData: any = {
       full_name: fullName,
       role: userRole,
-    });
+    };
+
+    // Only add doctor_id for patients and only if provided
+    if (userRole === 'patient' && doctorId.trim()) {
+      profileData.doctor_id = doctorId.trim();
+      console.log('✅ Added doctor_id to profile data:', doctorId.trim());
+    } else {
+      console.log('❌ Doctor ID not added. Role:', userRole, 'Doctor ID:', doctorId);
+    }
+
+    console.log('📊 Final profile data:', profileData);
+
+    const { error } = await signUp(email, password, profileData);
 
     if (error) {
       setError(error.message);
@@ -189,6 +207,23 @@ export default function SignUpScreen() {
               />
             </View>
           </View>
+
+          {/* Doctor Search Input - Only for Patients */}
+          {userRole === 'patient' && (
+            <View style={[styles.inputContainer, styles.doctorSearchContainer]}>
+              <Text style={styles.inputLabel}>Find Your Doctor (Optional)</Text>
+              <DoctorSearchInput
+                value={formData.doctorId}
+                onValueChange={(value) => updateFormData('doctorId', value)}
+                onDoctorSelect={(doctor) => {
+                      console.log('Selected doctor:', doctor);
+    console.log('Setting doctorId to:', doctor.id);
+    updateFormData('doctorId', doctor.id);
+                }}
+                placeholder="Search by doctor name, email, or ID..."
+              />
+            </View>
+          )}
 
           {/* Email Input */}
           <View style={styles.inputContainer}>
@@ -387,6 +422,10 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     marginBottom: 20,
+  },
+  doctorSearchContainer: {
+    marginBottom: 40, // Extra space for dropdown
+    zIndex: 1000,
   },
   inputLabel: {
     fontSize: 14,

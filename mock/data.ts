@@ -4,7 +4,7 @@ import { Appointment, DashboardStats, HealthGoal, HealthMetric, Patient } from '
 
 // Dashboard related
 export const dashboardStats: DashboardStats = {
-  totalPatients: 12,
+  totalPatients: 3,
   criticalCases: 2,
   stablePatients: 8,
   pendingReviews: 3,

@@ -9,9 +9,10 @@ import {
   Switch,
   Dimensions,
 } from 'react-native';
-import { User, Settings, Bell, Shield, CircleHelp as HelpCircle, CreditCard as Edit3, Award, Activity, Users, Calendar, ChevronRight, Star, TrendingUp, Heart, Pill, FileText, Phone, MapPin, Clock, Target, Zap, Download, Share, Camera, CircleCheck as CheckCircle, Stethoscope, ArrowLeft, LogOut } from 'lucide-react-native';
+import { User, Settings, Bell, Shield, CircleHelp as HelpCircle, CreditCard as Edit3, Award, Activity, Users, Calendar, ChevronRight, Star, TrendingUp, Heart, Pill, FileText, Phone, MapPin, Clock, Target, Zap, Download, Share, Camera, CircleCheck as CheckCircle, Stethoscope, ArrowLeft, LogOut, Mail } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
+import SkeletonLoader from '../../components/ui/SkeletonLoader';
 
 const { width } = Dimensions.get('window');
 
@@ -20,17 +21,7 @@ export default function ProfileScreen() {
   const [medicationReminders, setMedicationReminders] = useState(true);
   const [emergencyAlerts, setEmergencyAlerts] = useState(true);
 
-  // Mock profile data
-  const mockProfile = {
-    id: 'demo-patient-id',
-    email: 'patient@connectcare.ai',
-    full_name: 'Rajesh Kumar',
-    phone: '+91 98765 43220',
-    role: 'patient',
-    avatar_url: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-  };
-
-  const { signOut, profile } = useAuth();
+  const { signOut, profile, loading } = useAuth();
 
   const handleSignOut = async () => {
     const { error } = await signOut();
@@ -135,6 +126,21 @@ export default function ProfileScreen() {
     { icon: LogOut, label: 'Sign Out', color: '#ef4444', hasArrow: false, onPress: handleSignOut },
   ];
 
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Profile</Text>
+        </View>
+        <View style={{ padding: 20 }}>
+          <SkeletonLoader height={120} borderRadius={20} style={{ marginBottom: 20 }} />
+          <SkeletonLoader height={80} borderRadius={20} style={{ marginBottom: 20 }} />
+          <SkeletonLoader height={200} borderRadius={20} />
+        </View>
+      </View>
+    );
+  }
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header */}
@@ -158,118 +164,123 @@ export default function ProfileScreen() {
       {/* Profile Card */}
       <View style={styles.profileCard}>
         <View style={styles.avatarContainer}>
-          <Image source={{ uri: mockProfile?.avatar_url }} style={styles.avatar} />
+          <View style={styles.avatar}>
+            <User size={48} color="#ffffff" />
+          </View>
           <TouchableOpacity style={styles.cameraButton}>
             <Camera color="#ffffff" size={16} />
           </TouchableOpacity>
         </View>
         
         <View style={styles.profileInfo}>
-          <Text style={styles.profileName}>{mockProfile?.full_name}</Text>
+          <Text style={styles.profileName}>{profile?.full_name || 'User'}</Text>
           <Text style={styles.profileRole}>
-            {mockProfile?.role?.charAt(0).toUpperCase() + mockProfile?.role?.slice(1)}
+            {profile?.role?.charAt(0).toUpperCase() + (profile?.role?.slice(1) || '')}
           </Text>
           
           <View style={styles.profileDetails}>
             <View style={styles.profileDetailItem}>
-              <MapPin color="#6b7280" size={14} />
-              <Text style={styles.profileDetailText}>Mumbai, Maharashtra</Text>
+              <Mail color="#6b7280" size={14} />
+              <Text style={styles.profileDetailText}>{profile?.email || 'No email'}</Text>
             </View>
             <View style={styles.profileDetailItem}>
               <Calendar color="#6b7280" size={14} />
-              <Text style={styles.profileDetailText}>Age 49</Text>
-            </View>
-            <View style={styles.profileDetailItem}>
-              <Clock color="#6b7280" size={14} />
-              <Text style={styles.profileDetailText}>12 days post-surgery</Text>
+              <Text style={styles.profileDetailText}>Joined {new Date(profile?.created_at || Date.now()).toLocaleDateString()}</Text>
             </View>
           </View>
           
-          <View style={styles.healthStatusBadge}>
-            <Heart color="#10b981" size={16} />
-            <Text style={styles.healthStatusText}>Recovery on track</Text>
-          </View>
+          {profile?.role === 'patient' && (
+            <View style={styles.healthStatusBadge}>
+              <Heart color="#10b981" size={16} />
+              <Text style={styles.healthStatusText}>Recovery on track</Text>
+            </View>
+          )}
         </View>
       </View>
 
-      {/* Health Stats */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Health Overview</Text>
-        <View style={styles.statsGrid}>
-          {healthStats.map((stat, index) => (
-            <View key={index} style={styles.statCard}>
-              <View style={[styles.statIcon, { backgroundColor: `${stat.color}15` }]}>
-                <stat.icon color={stat.color} size={20} />
+      {/* Patient-specific sections */}
+      {profile?.role === 'patient' && (
+        <>
+          {/* Health Stats */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Health Overview</Text>
+            <View style={styles.statsGrid}>
+              {healthStats.map((stat, index) => (
+                <View key={index} style={styles.statCard}>
+                  <View style={[styles.statIcon, { backgroundColor: `${stat.color}15` }]}>
+                    <stat.icon color={stat.color} size={20} />
+                  </View>
+                  <Text style={styles.statValue}>{stat.value}</Text>
+                  <Text style={styles.statLabel}>{stat.label}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Health Goals */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Health Goals</Text>
+            {healthGoals.map((goal) => (
+              <View key={goal.id} style={styles.goalCard}>
+                <View style={styles.goalHeader}>
+                  <Text style={styles.goalTitle}>{goal.title}</Text>
+                  <Text style={styles.goalProgress}>{goal.progress}%</Text>
+                </View>
+                <View style={styles.goalProgressBar}>
+                  <View 
+                    style={[
+                      styles.goalProgressFill,
+                      { width: `${goal.progress}%`, backgroundColor: goal.color }
+                    ]} 
+                  />
+                </View>
+                <View style={styles.goalDetails}>
+                  <Text style={styles.goalCurrent}>{goal.current}</Text>
+                  <Text style={styles.goalTarget}>Target: {goal.target}</Text>
+                </View>
               </View>
-              <Text style={styles.statValue}>{stat.value}</Text>
-              <Text style={styles.statLabel}>{stat.label}</Text>
-            </View>
-          ))}
-        </View>
-      </View>
-
-      {/* Health Goals */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Health Goals</Text>
-        {healthGoals.map((goal) => (
-          <View key={goal.id} style={styles.goalCard}>
-            <View style={styles.goalHeader}>
-              <Text style={styles.goalTitle}>{goal.title}</Text>
-              <Text style={styles.goalProgress}>{goal.progress}%</Text>
-            </View>
-            <View style={styles.goalProgressBar}>
-              <View 
-                style={[
-                  styles.goalProgressFill,
-                  { width: `${goal.progress}%`, backgroundColor: goal.color }
-                ]} 
-              />
-            </View>
-            <View style={styles.goalDetails}>
-              <Text style={styles.goalCurrent}>{goal.current}</Text>
-              <Text style={styles.goalTarget}>Target: {goal.target}</Text>
-            </View>
+            ))}
           </View>
-        ))}
-      </View>
 
-      {/* Recent Activity */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recent Activity</Text>
-          <TouchableOpacity>
-            <Text style={styles.seeAll}>View All</Text>
-          </TouchableOpacity>
-        </View>
-        
-        {recentActivity.map((activity) => (
-          <View key={activity.id} style={styles.activityCard}>
-            <View style={[styles.activityIcon, { backgroundColor: `${activity.color}15` }]}>
-              <activity.icon color={activity.color} size={20} />
+          {/* Recent Activity */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Recent Activity</Text>
+              <TouchableOpacity>
+                <Text style={styles.seeAll}>View All</Text>
+              </TouchableOpacity>
             </View>
-            <View style={styles.activityInfo}>
-              <Text style={styles.activityTitle}>{activity.title}</Text>
-              <Text style={styles.activityDescription}>{activity.description}</Text>
-              <Text style={styles.activityTime}>{activity.time}</Text>
-            </View>
-          </View>
-        ))}
-      </View>
-
-      {/* Quick Actions */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
-        <View style={styles.quickActionsGrid}>
-          {quickActions.map((action, index) => (
-            <TouchableOpacity key={index} style={styles.quickActionCard}>
-              <View style={[styles.quickActionIcon, { backgroundColor: `${action.color}15` }]}>
-                <action.icon color={action.color} size={20} />
+            
+            {recentActivity.map((activity) => (
+              <View key={activity.id} style={styles.activityCard}>
+                <View style={[styles.activityIcon, { backgroundColor: `${activity.color}15` }]}>
+                  <activity.icon color={activity.color} size={20} />
+                </View>
+                <View style={styles.activityInfo}>
+                  <Text style={styles.activityTitle}>{activity.title}</Text>
+                  <Text style={styles.activityDescription}>{activity.description}</Text>
+                  <Text style={styles.activityTime}>{activity.time}</Text>
+                </View>
               </View>
-              <Text style={styles.quickActionLabel}>{action.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
+            ))}
+          </View>
+
+          {/* Quick Actions */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Quick Actions</Text>
+            <View style={styles.quickActionsGrid}>
+              {quickActions.map((action, index) => (
+                <TouchableOpacity key={index} style={styles.quickActionCard}>
+                  <View style={[styles.quickActionIcon, { backgroundColor: `${action.color}15` }]}>
+                    <action.icon color={action.color} size={20} />
+                  </View>
+                  <Text style={styles.quickActionLabel}>{action.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </>
+      )}
 
       {/* Settings */}
       <View style={styles.section}>
@@ -403,6 +414,9 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
+    backgroundColor: '#3b82f6',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   cameraButton: {
     position: 'absolute',

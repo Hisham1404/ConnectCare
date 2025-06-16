@@ -79,6 +79,7 @@ export interface Profile {
   email: string;
   full_name: string | null;
   role: 'patient' | 'doctor';
+  doctor_id?: string | null;
   created_at?: string;
   updated_at?: string;
 } 

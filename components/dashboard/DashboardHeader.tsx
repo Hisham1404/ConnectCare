@@ -1,10 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Bell, User, ArrowLeft } from 'lucide-react-native';
 import FeedbackButton from '../ui/FeedbackButton';
+import { useAuth } from '../../hooks/useAuth';
 
 interface DashboardHeaderProps {
-  profile: any;
   onSwitchMode: () => void;
   notificationCount?: number;
   showBackButton?: boolean;
@@ -12,12 +12,13 @@ interface DashboardHeaderProps {
 }
 
 export default function DashboardHeader({ 
-  profile, 
   onSwitchMode, 
   notificationCount = 0,
   showBackButton = false,
   onBackPress
 }: DashboardHeaderProps) {
+  const { profile } = useAuth();
+
   return (
     <View style={styles.header}>
       {showBackButton && (
@@ -35,14 +36,12 @@ export default function DashboardHeader({
       )}
       
       <View style={styles.headerLeft}>
-        <Image 
-          source={{ uri: profile?.avatar_url }} 
-          style={styles.avatar} 
-        />
+        <View style={styles.avatar}>
+          <User size={24} color="#ffffff" />
+        </View>
         <View>
           <Text style={styles.greeting}>Good Morning</Text>
-          <Text style={styles.doctorName}>{profile?.full_name}</Text>
-          <Text style={styles.specialization}>Cardiothoracic Surgeon</Text>
+          <Text style={styles.doctorName}>{profile?.full_name || 'Doctor'}</Text>
         </View>
       </View>
       
@@ -102,6 +101,9 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
+    backgroundColor: '#3b82f6',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   greeting: {
     fontSize: 14,

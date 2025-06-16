@@ -60,37 +60,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string, retries = 5, delay = 500) => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
+    for (let i = 0; i < retries; i++) {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
 
-    if (error) {
-      console.error('Error fetching profile:', error.message);
+      if (data) {
+        console.log(`✅ Profile fetched successfully on attempt ${i + 1}. Role: ${data.role}`);
+        setProfile(data as Profile);
+        setLoading(false);
+        return;
+      }
+      
+      if (error && error.code !== 'PGRST116') { // PGRST116 = "The result contains 0 rows"
+        console.error('Error fetching profile:', error.message);
+        break; 
+      }
+
+      if (i < retries - 1) {
+        console.warn(`Profile not found for user ${userId} on attempt ${i + 1}. Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
     }
-    if (data) {
-      console.log('Fetched profile role:', data.role);
-    }
-    setProfile(data as Profile);
+    
+    console.error(`🚨 Failed to fetch profile for user ${userId} after ${retries} attempts.`);
+    setProfile(null);
     setLoading(false);
   };
 
   const signUp = async (email: string, password: string, userData?: any) => {
     try {
-      const { error } = await supabase.auth.signUp({
+      // The trigger now handles profile creation. We just need to pass the metadata.
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: userData,
         },
       });
-      if (!error) {
-        // Wait for session to update; will be caught by listener
+
+      if (error) {
+        console.error('Error signing up:', error);
+        return { error };
       }
-      return { error };
+      
+      console.log('✅ Sign-up successful. Trigger will create profile.');
+      return { error: null };
     } catch (error) {
       return { error: error as AuthError };
     }
@@ -102,9 +121,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email,
         password,
       });
-      if (!error && data?.session?.user) {
-        await fetchProfile(data.session.user.id);
-      }
+      // The onAuthStateChange listener will handle fetching the profile.
+      // No need to call fetchProfile here directly.
       return { error };
     } catch (error) {
       return { error: error as AuthError };
