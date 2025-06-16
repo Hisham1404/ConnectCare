@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, ScrollView, TextInput, TouchableOpacity, Text, StyleSheet, RefreshControl } from 'react-native';
+import { Link } from 'expo-router';
 import { Search, Filter, Heart, Activity, Phone, Video, MessageSquare, User, AlertCircle } from 'lucide-react-native';
 
 interface PatientsTabProps {
@@ -109,75 +110,77 @@ export default function PatientsTab({
           </View>
         ) : (
           filteredPatients.map((patient) => (
-            <View key={patient.id} style={styles.patientCard}>
-              <View style={styles.patientHeader}>
-                <View style={styles.patientAvatar}>
-                  <User size={20} color="#ffffff" />
-                </View>
-                <View style={styles.patientInfo}>
-                  <View style={styles.patientNameRow}>
-                    <Text style={styles.patientName}>{patient.name}</Text>
-                    {patient.hasNewCheckin && (
-                      <View style={styles.newCheckinBadge}>
-                        <Text style={styles.newCheckinText}>NEW</Text>
-                      </View>
-                    )}
+            <Link key={patient.id} href={`/patient/${patient.id}`} asChild>
+              <TouchableOpacity style={styles.patientCard}>
+                <View style={styles.patientHeader}>
+                  <View style={styles.patientAvatar}>
+                    <User size={20} color="#ffffff" />
                   </View>
-                  <Text style={styles.patientCondition}>{patient.condition}</Text>
-                  <Text style={styles.patientAge}>Age {patient.age} • {patient.recoveryStage}</Text>
+                  <View style={styles.patientInfo}>
+                    <View style={styles.patientNameRow}>
+                      <Text style={styles.patientName}>{patient.name}</Text>
+                      {patient.hasNewCheckin && (
+                        <View style={styles.newCheckinBadge}>
+                          <Text style={styles.newCheckinText}>NEW</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={styles.patientCondition}>{patient.condition}</Text>
+                    <Text style={styles.patientAge}>Age {patient.age} • {patient.recoveryStage}</Text>
+                  </View>
+                  <View style={[
+                    styles.priorityIndicator,
+                    { backgroundColor: getPriorityColor(patient.priority) }
+                  ]} />
                 </View>
-                <View style={[
-                  styles.priorityIndicator,
-                  { backgroundColor: getPriorityColor(patient.priority) }
-                ]} />
-              </View>
 
-              <View style={styles.patientVitals}>
-                <View style={styles.vitalItem}>
-                  <Heart color="#ef4444" size={14} />
-                  <Text style={styles.vitalValue}>{patient.vitals.heartRate}</Text>
-                  <Text style={styles.vitalLabel}>BPM</Text>
+                <View style={styles.patientVitals}>
+                  <View style={styles.vitalItem}>
+                    <Heart color="#ef4444" size={14} />
+                    <Text style={styles.vitalValue}>{patient.vitals.heartRate}</Text>
+                    <Text style={styles.vitalLabel}>BPM</Text>
+                  </View>
+                  <View style={styles.vitalItem}>
+                    <Activity color="#3b82f6" size={14} />
+                    <Text style={styles.vitalValue}>{patient.vitals.bloodPressure}</Text>
+                    <Text style={styles.vitalLabel}>BP</Text>
+                  </View>
+                  <View style={styles.vitalItem}>
+                    <Text style={styles.vitalValue}>{patient.vitals.temperature}°</Text>
+                    <Text style={styles.vitalLabel}>TEMP</Text>
+                  </View>
+                  <View style={styles.vitalItem}>
+                    <Text style={styles.vitalValue}>{patient.vitals.oxygen}%</Text>
+                    <Text style={styles.vitalLabel}>O2</Text>
+                  </View>
                 </View>
-                <View style={styles.vitalItem}>
-                  <Activity color="#3b82f6" size={14} />
-                  <Text style={styles.vitalValue}>{patient.vitals.bloodPressure}</Text>
-                  <Text style={styles.vitalLabel}>BP</Text>
-                </View>
-                <View style={styles.vitalItem}>
-                  <Text style={styles.vitalValue}>{patient.vitals.temperature}°</Text>
-                  <Text style={styles.vitalLabel}>TEMP</Text>
-                </View>
-                <View style={styles.vitalItem}>
-                  <Text style={styles.vitalValue}>{patient.vitals.oxygen}%</Text>
-                  <Text style={styles.vitalLabel}>O2</Text>
-                </View>
-              </View>
 
-              <View style={styles.patientFooter}>
-                <Text style={styles.lastCheckin}>Last check-in: {patient.lastCheckin}</Text>
-                <View style={styles.patientActions}>
-                  <TouchableOpacity style={styles.actionButton}>
-                    <Phone color="#6b7280" size={14} />
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.actionButton}>
-                    <Video color="#6b7280" size={14} />
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.actionButton}>
-                    <MessageSquare color="#6b7280" size={14} />
-                  </TouchableOpacity>
+                <View style={styles.patientFooter}>
+                  <Text style={styles.lastCheckin}>Last check-in: {patient.lastCheckin}</Text>
+                  <View style={styles.patientActions}>
+                    <TouchableOpacity style={styles.actionButton}>
+                      <Phone color="#6b7280" size={14} />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.actionButton}>
+                      <Video color="#6b7280" size={14} />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.actionButton}>
+                      <MessageSquare color="#6b7280" size={14} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              </View>
 
-              <View style={styles.riskScoreContainer}>
-                <Text style={styles.riskScoreLabel}>Risk Score</Text>
-                <Text style={[
-                  styles.riskScoreValue,
-                  { color: patient.riskScore > 70 ? '#ef4444' : patient.riskScore > 40 ? '#f59e0b' : '#10b981' }
-                ]}>
-                  {patient.riskScore}
-                </Text>
-              </View>
-            </View>
+                <View style={styles.riskScoreContainer}>
+                  <Text style={styles.riskScoreLabel}>Risk Score</Text>
+                  <Text style={[
+                    styles.riskScoreValue,
+                    { color: patient.riskScore > 70 ? '#ef4444' : patient.riskScore > 40 ? '#f59e0b' : '#10b981' }
+                  ]}>
+                    {patient.riskScore}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </Link>
           ))
         )}
       </ScrollView>

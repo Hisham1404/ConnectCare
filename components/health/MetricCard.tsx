@@ -14,11 +14,14 @@ interface Props {
 
 const MetricCard: React.FC<Props> = ({ metric, renderMiniChart }) => {
   const getTrendIcon = (trend: HealthMetric['trend']) => {
+    console.log('Trend for metric:', metric.label, 'is:', trend); // Debug log
     switch (trend) {
       case 'improving':
-        return TrendingDown;
-      case 'declining':
         return TrendingUp;
+      case 'declining':
+        return TrendingDown;
+      case 'stable':
+        return TrendingUp; // Use TrendingUp for stable as well
       default:
         return TrendingUp;
     }
@@ -30,12 +33,13 @@ const MetricCard: React.FC<Props> = ({ metric, renderMiniChart }) => {
         return Colors.success;
       case 'declining':
         return Colors.error;
+      case 'stable':
+        return Colors.textSecondary;
       default:
         return Colors.textSecondary;
     }
   };
 
-  const TrendIcon = getTrendIcon(metric.trend);
   const trendColor = getTrendColor(metric.trend);
 
   return (
@@ -45,7 +49,9 @@ const MetricCard: React.FC<Props> = ({ metric, renderMiniChart }) => {
           <metric.icon color={metric.color} size={24} />
         </View>
         <View style={styles.trendWrapper}>
-          <TrendIcon color={trendColor} size={16} />
+          {metric.trend === 'improving' && <TrendingUp color={trendColor} size={14} />}
+          {metric.trend === 'declining' && <TrendingDown color={trendColor} size={14} />}
+          {metric.trend === 'stable' && <TrendingUp color={trendColor} size={14} />}
           <Text style={[styles.trendText, { color: trendColor }]}>{metric.change}</Text>
         </View>
       </View>
@@ -71,19 +77,20 @@ const styles = StyleSheet.create({
     width: (width - 52) / 2,
     backgroundColor: Colors.surface,
     borderRadius: 20,
-    padding: 16,
+    padding: 18,
     marginBottom: 16,
     ...shadow(2),
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    marginBottom: 16,
   },
   iconWrapper: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -91,38 +98,46 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    backgroundColor: `${Colors.background}`,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
   trendText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '700',
   },
   value: {
-    fontSize: 28,
-    fontWeight: '700',
-    marginTop: 12,
+    fontSize: 26,
+    fontWeight: '800',
+    marginBottom: 4,
     color: Colors.textPrimary,
+    lineHeight: 30,
   },
   unit: {
-    fontSize: 14,
-    fontWeight: '400',
+    fontSize: 13,
+    fontWeight: '500',
     color: Colors.textSecondary,
   },
   label: {
-    fontSize: 14,
+    fontSize: 13,
     color: Colors.textSecondary,
+    fontWeight: '600',
+    marginBottom: 6,
   },
   normal: {
-    fontSize: 12,
+    fontSize: 11,
     color: Colors.textTertiary,
-    marginTop: 4,
+    marginBottom: 12,
   },
   chartContainer: {
-    marginTop: 12,
-    marginBottom: 8,
+    marginTop: 8,
+    marginBottom: 10,
   },
   lastReading: {
-    fontSize: 10,
+    fontSize: 9,
     color: Colors.textTertiary,
+    fontWeight: '500',
   },
 });
 

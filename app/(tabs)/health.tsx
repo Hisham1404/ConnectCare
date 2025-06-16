@@ -7,6 +7,9 @@ import {
   TouchableOpacity,
   Dimensions,
   RefreshControl,
+  Modal,
+  TextInput,
+  Alert,
 } from 'react-native';
 import { Heart, Activity, Thermometer, Droplets, Weight, Ruler, TrendingUp, TrendingDown, Calendar, Clock, Plus, ChartBar as BarChart3, ChartLine as LineChart, Target, Award, Zap } from 'lucide-react-native';
 import { Colors } from '../../constants/Colors';
@@ -45,6 +48,15 @@ export default function HealthScreen() {
   const [healthMetrics, setHealthMetrics] = useState<HealthMetric[]>([]);
   const [healthGoals, setHealthGoals] = useState<HealthGoal[]>([]);
   const [error, setError] = useState<string | null>(null);
+  
+  // Modal and form state
+  const [showAddMetricModal, setShowAddMetricModal] = useState(false);
+  const [formData, setFormData] = useState({
+    type: '',
+    value: '',
+    unit: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { user, loading: authLoading } = useAuth();
 
@@ -142,6 +154,65 @@ export default function HealthScreen() {
     }
   };
 
+  // Handle form submission
+  const handleSubmitMetric = async () => {
+    if (!user?.id) return;
+    
+    // Validate form data
+    if (!formData.type || !formData.value || !formData.unit) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const { error } = await supabase
+        .from('health_metrics')
+        .insert([{
+          patient_id: user.id,
+          type: formData.type,
+          value: formData.value,
+          unit: formData.unit,
+          created_at: new Date().toISOString()
+        }]);
+
+      if (error) throw error;
+
+      // Success - close modal and refresh data
+      setShowAddMetricModal(false);
+      setFormData({ type: '', value: '', unit: '' });
+      Alert.alert('Success', 'Health metric added successfully!');
+      
+      // Refresh the metrics list
+      await onRefresh();
+
+    } catch (err) {
+      console.error('Error adding health metric:', err);
+      Alert.alert('Error', 'Failed to add health metric. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Reset form when modal closes
+  const handleCloseModal = () => {
+    setShowAddMetricModal(false);
+    setFormData({ type: '', value: '', unit: '' });
+  };
+
+  // Predefined metric types for the dropdown
+  const metricTypes = [
+    { label: 'Heart Rate', value: 'Heart Rate', unit: 'BPM' },
+    { label: 'Blood Pressure', value: 'Blood Pressure', unit: 'mmHg' },
+    { label: 'Temperature', value: 'Temperature', unit: '°F' },
+    { label: 'Oxygen Level', value: 'Oxygen Level', unit: '%' },
+    { label: 'Weight', value: 'Weight', unit: 'lbs' },
+    { label: 'Blood Sugar', value: 'Blood Sugar', unit: 'mg/dL' },
+    { label: 'Steps', value: 'Steps', unit: 'steps' },
+    { label: 'Pain Level', value: 'Pain Level', unit: '/10' }
+  ];
+
   const getTrendIcon = (trend: string) => {
     switch (trend) {
       case 'improving': return TrendingUp;
@@ -209,6 +280,7 @@ export default function HealthScreen() {
                   height,
                   backgroundColor: color,
                   opacity: index === readings.length - 1 ? 1 : 0.6,
+                  marginRight: index === readings.length - 1 ? 0 : 2,
                 }
               ]}
             />
@@ -219,19 +291,27 @@ export default function HealthScreen() {
   };
 
   // Transform database metrics to match the expected format
-  const transformedMetrics = healthMetrics.map(metric => ({
-    id: metric.id,
-    label: metric.type,
-    value: metric.value,
-    unit: metric.unit,
-    icon: getMetricIcon(metric.type),
-    color: getMetricColor(metric.type),
-    trend: 'stable', // Default trend - you can enhance this later
-    change: '0%', // Default change - you can enhance this later
-    normal: 'Normal', // Default normal range - you can enhance this later
-    lastReading: new Date(metric.created_at).toLocaleString(),
-    readings: [70, 72, 75, 73, 71, 74, parseInt(metric.value) || 0], // Mock readings for chart
-  }));
+  const transformedMetrics = healthMetrics.map((metric, index) => {
+    // Generate some sample trend data based on metric type and index
+    const trends = ['improving', 'stable', 'declining'];
+    const changes = ['+5%', '0%', '-3%', '+2%', '-1%'];
+    const trendForMetric = index % 3 === 0 ? 'improving' : index % 3 === 1 ? 'stable' : 'declining';
+    const changeForMetric = changes[index % changes.length];
+    
+    return {
+      id: metric.id,
+      label: metric.type,
+      value: metric.value,
+      unit: metric.unit,
+      icon: getMetricIcon(metric.type),
+      color: getMetricColor(metric.type),
+      trend: trendForMetric,
+      change: changeForMetric,
+      normal: 'Normal',
+      lastReading: new Date(metric.created_at).toLocaleString(),
+      readings: [70, 72, 75, 73, 71, 74, parseInt(metric.value) || 0], // Mock readings for chart
+    };
+  });
 
   // Transform database goals to match the expected format
   const transformedGoals = healthGoals.map(goal => ({
@@ -263,19 +343,20 @@ export default function HealthScreen() {
   }
 
   return (
-    <ScrollView 
-      style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      showsVerticalScrollIndicator={false}
-    >
+    <View style={styles.container}>
+      <ScrollView 
+        style={styles.container}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        showsVerticalScrollIndicator={false}
+      >
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Health Tracking</Text>
         <FeedbackButton
-          onPress={() => console.log('Add health data')}
-          style={styles.addButton}
+          onPress={() => setShowAddMetricModal(true)}
+          style={styles.headerButton}
         >
-          <Plus color={Colors.accent} size={20} />
+          <Plus color="#ffffff" size={20} />
         </FeedbackButton>
       </View>
 
@@ -315,7 +396,15 @@ export default function HealthScreen() {
 
       {/* Enhanced Health Metrics Grid */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Health Metrics</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitleInHeader}>Health Metrics</Text>
+          <FeedbackButton 
+            onPress={() => setShowAddMetricModal(true)}
+            style={styles.metricsAddButton}
+          >
+            <Text style={styles.addButtonText}>Add New</Text>
+          </FeedbackButton>
+        </View>
         
         <View style={styles.metricsGrid}>
           {isLoadingData ? (
@@ -347,7 +436,7 @@ export default function HealthScreen() {
       {/* Health Goals */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Health Goals</Text>
+          <Text style={styles.sectionTitleInHeader}>Health Goals</Text>
           <FeedbackButton onPress={() => console.log('View all goals')}>
             <Text style={styles.seeAll}>View All</Text>
           </FeedbackButton>
@@ -373,7 +462,7 @@ export default function HealthScreen() {
       {/* Recent Readings */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recent Readings</Text>
+          <Text style={styles.sectionTitleInHeader}>Recent Readings</Text>
           <FeedbackButton onPress={() => console.log('View trends')}>
             <LineChart color={Colors.accent} size={20} />
           </FeedbackButton>
@@ -466,7 +555,96 @@ export default function HealthScreen() {
           </FeedbackButton>
         </View>
       </View>
-    </ScrollView>
+      </ScrollView>
+
+      {/* Add Metric Modal */}
+      <Modal
+        visible={showAddMetricModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={handleCloseModal}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={handleCloseModal}>
+              <Text style={styles.modalCancelButton}>Cancel</Text>
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Add Health Metric</Text>
+            <TouchableOpacity 
+              onPress={handleSubmitMetric}
+              disabled={isSubmitting}
+              style={[styles.modalSaveButton, isSubmitting && styles.modalSaveButtonDisabled]}
+            >
+              <Text style={[styles.modalSaveButtonText, isSubmitting && styles.modalSaveButtonTextDisabled]}>
+                {isSubmitting ? 'Saving...' : 'Save'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+            {/* Metric Type Selection */}
+            <View style={styles.formSection}>
+              <Text style={styles.formLabel}>Metric Type</Text>
+              <View style={styles.metricTypeGrid}>
+                {metricTypes.map((type) => (
+                  <TouchableOpacity
+                    key={type.value}
+                    style={[
+                      styles.metricTypeButton,
+                      formData.type === type.value && styles.metricTypeButtonSelected
+                    ]}
+                    onPress={() => setFormData(prev => ({ 
+                      ...prev, 
+                      type: type.value, 
+                      unit: type.unit 
+                    }))}
+                  >
+                    <Text style={[
+                      styles.metricTypeButtonText,
+                      formData.type === type.value && styles.metricTypeButtonTextSelected
+                    ]}>
+                      {type.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Value Input */}
+            <View style={styles.formSection}>
+              <Text style={styles.formLabel}>Value</Text>
+              <TextInput
+                style={styles.textInput}
+                value={formData.value}
+                onChangeText={(text) => setFormData(prev => ({ ...prev, value: text }))}
+                placeholder="Enter value (e.g., 72, 120/80)"
+                keyboardType="numeric"
+                placeholderTextColor="#9ca3af"
+              />
+            </View>
+
+            {/* Unit Input */}
+            <View style={styles.formSection}>
+              <Text style={styles.formLabel}>Unit</Text>
+              <TextInput
+                style={styles.textInput}
+                value={formData.unit}
+                onChangeText={(text) => setFormData(prev => ({ ...prev, unit: text }))}
+                placeholder="Unit (e.g., BPM, mmHg, °F)"
+                placeholderTextColor="#9ca3af"
+              />
+            </View>
+
+            {/* Helper Text */}
+            <View style={styles.helperSection}>
+              <Text style={styles.helperText}>
+                Select a metric type above and enter the corresponding value. The unit will be automatically filled but can be customized.
+              </Text>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
+    </View>
   );
 }
 
@@ -544,13 +722,39 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: Colors.textPrimary,
   },
-  addButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: `${Colors.accent}${Colors.opacity.light}`,
-    justifyContent: 'center',
+  headerButton: {
+    backgroundColor: Colors.primary,
+    flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 25,
+    gap: 6,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  addButtonText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  metricsAddButton: {
+    backgroundColor: Colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 18,
+    marginTop: 8,
+    alignSelf: 'center',
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.25,
+    shadowRadius: 2,
+    elevation: 2,
   },
   periodSelectorContainer: {
     backgroundColor: Colors.surface,
@@ -609,6 +813,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.textPrimary,
     marginBottom: 16,
+  },
+  sectionTitleInHeader: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: Colors.textPrimary,
   },
   seeAll: {
     fontSize: 14,
@@ -680,15 +889,15 @@ const styles = StyleSheet.create({
   },
   miniChart: {
     flexDirection: 'row',
-    alignItems: 'end',
+    alignItems: 'flex-end',
     height: 48,
-    gap: 2,
     justifyContent: 'space-between',
   },
   chartBar: {
     flex: 1,
     borderRadius: 2,
     minHeight: 8,
+    marginRight: 2,
   },
   metricLastReading: {
     fontSize: 11,
@@ -825,6 +1034,134 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: Colors.textPrimary,
+    textAlign: 'center',
+  },
+  // Modal styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 20,
+    backgroundColor: Colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: `${Colors.textSecondary}${Colors.opacity.light}`,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+  },
+  modalCancelButton: {
+    fontSize: 16,
+    color: Colors.textSecondary,
+    fontWeight: '600',
+  },
+  modalSaveButton: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 12,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  modalSaveButtonDisabled: {
+    opacity: 0.6,
+  },
+  modalSaveButtonText: {
+    color: Colors.surface,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  modalSaveButtonTextDisabled: {
+    color: Colors.textSecondary,
+  },
+  modalContent: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 24,
+  },
+  formSection: {
+    marginBottom: 28,
+  },
+  formLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    marginBottom: 14,
+  },
+  textInput: {
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    padding: 18,
+    fontSize: 16,
+    color: Colors.textPrimary,
+    borderWidth: 1.5,
+    borderColor: `${Colors.textSecondary}${Colors.opacity.light}`,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  metricTypeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  metricTypeButton: {
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderWidth: 1.5,
+    borderColor: `${Colors.textSecondary}${Colors.opacity.light}`,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  metricTypeButtonSelected: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  metricTypeButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+    textAlign: 'center',
+  },
+  metricTypeButtonTextSelected: {
+    color: Colors.surface,
+    fontWeight: '700',
+  },
+  helperSection: {
+    backgroundColor: `${Colors.accent}${Colors.opacity.ultraLight}`,
+    borderRadius: 14,
+    padding: 18,
+    marginTop: 24,
+    borderWidth: 1,
+    borderColor: `${Colors.accent}${Colors.opacity.light}`,
+  },
+  helperText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    lineHeight: 21,
     textAlign: 'center',
   },
 });
