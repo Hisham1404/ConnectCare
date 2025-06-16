@@ -570,7 +570,7 @@ const styles = StyleSheet.create({
   },
   miniChart: {
     flexDirection: 'row',
-    alignItems: 'end',
+    alignItems: 'flex-end',
     height: 25,
     gap: 1,
   },

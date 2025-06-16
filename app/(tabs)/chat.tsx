@@ -6,9 +6,20 @@ import { MessageCircle, Trash2 } from 'lucide-react-native';
 import ConvAiDOMComponent from '../../components/ConvAI';
 import tools from '../../utils/tools';
 import { useTranscript } from '../../context/TranscriptContext';
+import { useAuth } from '@/hooks/useAuth';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 export default function ChatScreen() {
   const { transcript, clearTranscript, isRecording, addMessage, setIsRecording } = useTranscript();
+  const { profile, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <LoadingSpinner size="large" />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -63,6 +74,7 @@ export default function ChatScreen() {
         <ConvAiDOMComponent
           dom={{ style: styles.domComponent }}
           platform={Platform.OS}
+          patientId={profile?.id}
           get_battery_level={tools.get_battery_level}
           change_brightness={tools.change_brightness}
           flash_screen={tools.flash_screen}
@@ -175,5 +187,11 @@ const styles = StyleSheet.create({
   domComponent: { 
     width: 120, 
     height: 120 
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#0F172A',
   },
 });

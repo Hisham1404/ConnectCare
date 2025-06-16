@@ -4,7 +4,6 @@ import { StatusBar } from 'expo-status-bar';
 import { router, Redirect } from 'expo-router';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { useAuth } from '@/hooks/useAuth';
-import { dashboardStats as mockDashboardStats } from '@/mock/data';
 import { supabase } from '@/lib/supabase';
 
 // Import components
@@ -56,9 +55,6 @@ export default function DoctorDashboard() {
   const [selectedPatientForMonitoring, setSelectedPatientForMonitoring] = useState('');
   const [patients, setPatients] = useState<TransformedPatient[]>([]);
   const [error, setError] = useState<string | null>(null);
-
-  // Replace inline mock data with shared fixtures
-  const [dashboardStats, setDashboardStats] = useState(mockDashboardStats);
   const [todaysAppointments, setTodaysAppointments] = useState<any[]>([]);
 
   const { user, loading: authLoading } = useAuth();
@@ -162,14 +158,6 @@ export default function DoctorDashboard() {
         // Generate appointments with real patient names
         const appointments = generateTodaysAppointments(patientsData);
         setTodaysAppointments(appointments);
-        
-        // Update dashboard stats with real patient count
-        setDashboardStats(prev => ({
-          ...prev,
-          totalPatients: patientsData.length,
-          criticalCases: patientsData.filter(p => p.priority === 'critical').length,
-          stablePatients: patientsData.filter(p => p.priority === 'stable').length,
-        }));
       } catch (err) {
         console.error('Error loading dashboard data:', err);
         setError('Failed to load dashboard data');
@@ -208,14 +196,6 @@ export default function DoctorDashboard() {
       // Generate appointments with real patient names
       const appointments = generateTodaysAppointments(patientsData);
       setTodaysAppointments(appointments);
-      
-      // Update dashboard stats
-      setDashboardStats(prev => ({
-        ...prev,
-        totalPatients: patientsData.length,
-        criticalCases: patientsData.filter(p => p.priority === 'critical').length,
-        stablePatients: patientsData.filter(p => p.priority === 'stable').length,
-      }));
     } catch (err) {
       console.error('Error refreshing dashboard data:', err);
       setError('Failed to refresh data');
@@ -249,7 +229,6 @@ export default function DoctorDashboard() {
       case 'overview':
         return (
           <OverviewTab
-            dashboardStats={dashboardStats}
             todaysAppointments={todaysAppointments}
             refreshing={refreshing}
             onRefresh={onRefresh}
@@ -297,7 +276,6 @@ export default function DoctorDashboard() {
       default:
         return (
           <OverviewTab
-            dashboardStats={dashboardStats}
             todaysAppointments={todaysAppointments}
             refreshing={refreshing}
             onRefresh={onRefresh}
@@ -312,7 +290,7 @@ export default function DoctorDashboard() {
       
       <DashboardHeader
         onSwitchMode={switchToPatientMode}
-        notificationCount={dashboardStats.pendingReviews}
+        notificationCount={0}
         showBackButton={true}
         onBackPress={() => router.replace('/')}
       />

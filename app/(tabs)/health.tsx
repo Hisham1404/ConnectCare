@@ -51,10 +51,16 @@ export default function HealthScreen() {
   
   // Modal and form state
   const [showAddMetricModal, setShowAddMetricModal] = useState(false);
+  const [showAddGoalModal, setShowAddGoalModal] = useState(false);
   const [formData, setFormData] = useState({
     type: '',
     value: '',
     unit: ''
+  });
+  const [goalFormData, setGoalFormData] = useState({
+    title: '',
+    description: '',
+    status: 'not_started'
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -195,10 +201,57 @@ export default function HealthScreen() {
     }
   };
 
+  // Handle goal submission
+  const handleSubmitGoal = async () => {
+    if (!user?.id) return;
+    
+    // Validate form data
+    if (!goalFormData.title || !goalFormData.description) {
+      Alert.alert('Error', 'Please fill in title and description');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const { error } = await supabase
+        .from('health_goals')
+        .insert([{
+          patient_id: user.id,
+          title: goalFormData.title,
+          description: goalFormData.description,
+          status: goalFormData.status,
+          created_at: new Date().toISOString()
+        }]);
+
+      if (error) throw error;
+
+      // Success - close modal and refresh data
+      setShowAddGoalModal(false);
+      setGoalFormData({ title: '', description: '', status: 'not_started' });
+      Alert.alert('Success', 'Health goal added successfully!');
+      
+      // Refresh the goals list
+      await onRefresh();
+
+    } catch (err) {
+      console.error('Error adding health goal:', err);
+      Alert.alert('Error', 'Failed to add health goal. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   // Reset form when modal closes
   const handleCloseModal = () => {
     setShowAddMetricModal(false);
     setFormData({ type: '', value: '', unit: '' });
+  };
+
+  // Reset goal form when modal closes
+  const handleCloseGoalModal = () => {
+    setShowAddGoalModal(false);
+    setGoalFormData({ title: '', description: '', status: 'not_started' });
   };
 
   // Predefined metric types for the dropdown
@@ -352,12 +405,6 @@ export default function HealthScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Health Tracking</Text>
-        <FeedbackButton
-          onPress={() => setShowAddMetricModal(true)}
-          style={styles.headerButton}
-        >
-          <Plus color="#ffffff" size={20} />
-        </FeedbackButton>
       </View>
 
       {/* Error Message */}
@@ -437,8 +484,11 @@ export default function HealthScreen() {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitleInHeader}>Health Goals</Text>
-          <FeedbackButton onPress={() => console.log('View all goals')}>
-            <Text style={styles.seeAll}>View All</Text>
+          <FeedbackButton 
+            onPress={() => setShowAddGoalModal(true)}
+            style={styles.metricsAddButton}
+          >
+            <Text style={styles.addButtonText}>Add New</Text>
           </FeedbackButton>
         </View>
         
@@ -644,6 +694,98 @@ export default function HealthScreen() {
           </ScrollView>
         </View>
       </Modal>
+
+      {/* Add Goal Modal */}
+      <Modal
+        visible={showAddGoalModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={handleCloseGoalModal}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={handleCloseGoalModal}>
+              <Text style={styles.modalCancelButton}>Cancel</Text>
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Add Health Goal</Text>
+            <TouchableOpacity 
+              onPress={handleSubmitGoal}
+              disabled={isSubmitting}
+              style={[styles.modalSaveButton, isSubmitting && styles.modalSaveButtonDisabled]}
+            >
+              <Text style={[styles.modalSaveButtonText, isSubmitting && styles.modalSaveButtonTextDisabled]}>
+                {isSubmitting ? 'Saving...' : 'Save'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+            {/* Goal Title Input */}
+            <View style={styles.formSection}>
+              <Text style={styles.formLabel}>Goal Title</Text>
+              <TextInput
+                style={styles.textInput}
+                value={goalFormData.title}
+                onChangeText={(text) => setGoalFormData(prev => ({ ...prev, title: text }))}
+                placeholder="Enter goal title (e.g., Lose 10 pounds, Walk 10k steps daily)"
+                placeholderTextColor="#9ca3af"
+              />
+            </View>
+
+            {/* Goal Description Input */}
+            <View style={styles.formSection}>
+              <Text style={styles.formLabel}>Description</Text>
+              <TextInput
+                style={[styles.textInput, styles.textAreaInput]}
+                value={goalFormData.description}
+                onChangeText={(text) => setGoalFormData(prev => ({ ...prev, description: text }))}
+                placeholder="Describe your goal and how you plan to achieve it..."
+                placeholderTextColor="#9ca3af"
+                multiline={true}
+                numberOfLines={4}
+              />
+            </View>
+
+            {/* Goal Status Selection */}
+            <View style={styles.formSection}>
+              <Text style={styles.formLabel}>Status</Text>
+              <View style={styles.statusGrid}>
+                {[
+                  { label: 'Not Started', value: 'not_started' },
+                  { label: 'In Progress', value: 'in_progress' },
+                  { label: 'Completed', value: 'completed' }
+                ].map((status) => (
+                  <TouchableOpacity
+                    key={status.value}
+                    style={[
+                      styles.statusButton,
+                      goalFormData.status === status.value && styles.statusButtonSelected
+                    ]}
+                    onPress={() => setGoalFormData(prev => ({ 
+                      ...prev, 
+                      status: status.value 
+                    }))}
+                  >
+                    <Text style={[
+                      styles.statusButtonText,
+                      goalFormData.status === status.value && styles.statusButtonTextSelected
+                    ]}>
+                      {status.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Helper Text */}
+            <View style={styles.helperSection}>
+              <Text style={styles.helperText}>
+                Set a clear, achievable health goal with a specific description. You can update the status as you make progress.
+              </Text>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -722,27 +864,8 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: Colors.textPrimary,
   },
-  headerButton: {
-    backgroundColor: Colors.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 25,
-    gap: 6,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  addButtonText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '700',
-  },
   metricsAddButton: {
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.accent,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
@@ -750,11 +873,16 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     marginTop: 8,
     alignSelf: 'center',
-    shadowColor: Colors.primary,
+    shadowColor: Colors.accent,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.25,
     shadowRadius: 2,
     elevation: 2,
+  },
+  addButtonText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '700',
   },
   periodSelectorContainer: {
     backgroundColor: Colors.surface,
@@ -1063,11 +1191,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   modalSaveButton: {
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.accent,
     paddingHorizontal: 18,
     paddingVertical: 10,
     borderRadius: 12,
-    shadowColor: Colors.primary,
+    shadowColor: Colors.accent,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -1132,9 +1260,9 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   metricTypeButtonSelected: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-    shadowColor: Colors.primary,
+    backgroundColor: Colors.accent,
+    borderColor: Colors.accent,
+    shadowColor: Colors.accent,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
@@ -1163,5 +1291,46 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     lineHeight: 21,
     textAlign: 'center',
+  },
+  textAreaInput: {
+    height: 100,
+  },
+  statusGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  statusButton: {
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderWidth: 1.5,
+    borderColor: `${Colors.textSecondary}${Colors.opacity.light}`,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  statusButtonSelected: {
+    backgroundColor: Colors.accent,
+    borderColor: Colors.accent,
+    shadowColor: Colors.accent,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  statusButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+    textAlign: 'center',
+  },
+  statusButtonTextSelected: {
+    color: Colors.surface,
+    fontWeight: '700',
   },
 });

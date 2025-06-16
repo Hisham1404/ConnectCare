@@ -82,4 +82,49 @@ export interface Profile {
   doctor_id?: string | null;
   created_at?: string;
   updated_at?: string;
+}
+
+// ElevenLabs Conversation Types
+export interface ElevenLabsTranscriptSegment {
+  speaker: string;
+  text: string;
+  start_time: number;
+  end_time: number;
+}
+
+export interface ElevenLabsConversationData {
+  conversation_id: string;
+  transcript: ElevenLabsTranscriptSegment[];
+  summary?: string;
+  analysis?: {
+    sentiment?: string;
+    key_topics?: string[];
+    action_items?: string[];
+    [key: string]: any;
+  };
+  metadata?: {
+    patient_id?: string;
+    call_duration?: number;
+    call_start_time?: string;
+    call_end_time?: string;
+    [key: string]: any;
+  };
+  [key: string]: any; // Allow for additional fields from ElevenLabs
+}
+
+export interface ElevenLabsWebhookPayload {
+  event_type: string;
+  data: ElevenLabsConversationData;
+  metadata?: {
+    patient_id?: string;
+    [key: string]: any;
+  };
+}
+
+export interface Conversation {
+  id: string;
+  patient_id: string;
+  conversation_data: ElevenLabsConversationData;
+  created_at: string;
+  updated_at: string;
 } 
