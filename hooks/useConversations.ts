@@ -115,8 +115,9 @@ export function useConversations({
   const getConversationSummary = (conversation: Conversation) => {
     const data = conversation.conversation_data;
     
-    // Extract summary
-    const summary = data.summary || 
+    // Extract summary, prioritizing the detailed transcript summary
+    const summary = data.analysis?.transcript_summary ||
+                   data.summary || 
                    data.analysis?.summary || 
                    'No summary available';
 

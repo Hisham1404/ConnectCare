@@ -86,8 +86,8 @@ export interface Profile {
 
 // ElevenLabs Conversation Types
 export interface ElevenLabsTranscriptSegment {
-  speaker: string;
-  text: string;
+  role: string;
+  content: string;
   start_time: number;
   end_time: number;
 }
