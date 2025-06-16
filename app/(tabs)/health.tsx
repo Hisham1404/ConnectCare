@@ -380,6 +380,16 @@ export default function HealthScreen() {
     status: goal.status,
   }));
 
+  const renderEmptyState = () => (
+    <View style={styles.emptyStateContainer}>
+      <Target color={Colors.accent} size={64} strokeWidth={1.5} />
+      <Text style={styles.emptyStateTitle}>Track Your Health</Text>
+      <Text style={styles.emptyStateText}>
+        No health data has been logged yet. Tap the 'Add New Metric' button to get started.
+      </Text>
+    </View>
+  );
+
   // NAVIGATION GUARD: Only patients who are signed in
   if (!authLoading && !user) {
     return <Redirect href="/(auth)/signin" />;
@@ -399,7 +409,7 @@ export default function HealthScreen() {
     <View style={styles.container}>
       <ScrollView 
         style={styles.container}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.accent]} tintColor={Colors.accent} />}
         showsVerticalScrollIndicator={false}
       >
       {/* Header */}
@@ -455,27 +465,19 @@ export default function HealthScreen() {
         
         <View style={styles.metricsGrid}>
           {isLoadingData ? (
-            <>
-              <SkeletonLoader width={(width - 56) / 2} height={200} borderRadius={20} />
-              <SkeletonLoader width={(width - 56) / 2} height={200} borderRadius={20} />
-              <SkeletonLoader width={(width - 56) / 2} height={200} borderRadius={20} />
-              <SkeletonLoader width={(width - 56) / 2} height={200} borderRadius={20} />
-              <SkeletonLoader width={(width - 56) / 2} height={200} borderRadius={20} />
-              <SkeletonLoader width={(width - 56) / 2} height={200} borderRadius={20} />
-            </>
-          ) : transformedMetrics.length > 0 ? (
-            transformedMetrics.map((metric) => (
-              <MetricCard
-                key={metric.id}
-                metric={metric}
-                renderMiniChart={renderMiniChart}
-              />
-            ))
+            <SkeletonLoader />
+          ) : healthMetrics.length === 0 && healthGoals.length === 0 ? (
+            renderEmptyState()
           ) : (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>No health metrics found</Text>
-              <Text style={styles.emptyStateSubtext}>Start tracking your health by adding some metrics</Text>
-            </View>
+            <>
+              {transformedMetrics.map((metric) => (
+                <MetricCard
+                  key={metric.id}
+                  metric={metric}
+                  renderMiniChart={renderMiniChart}
+                />
+              ))}
+            </>
           )}
         </View>
       </View>
@@ -494,17 +496,15 @@ export default function HealthScreen() {
         
         <View style={styles.goalsGrid}>
           {isLoadingData ? (
-            <>
-              <SkeletonLoader width={(width - 52) / 2} height={120} borderRadius={16} />
-              <SkeletonLoader width={(width - 52) / 2} height={120} borderRadius={16} />
-            </>
-          ) : transformedGoals.length > 0 ? (
-            transformedGoals.map((goal) => <GoalCard key={goal.id} goal={goal} />)
-          ) : (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>No health goals found</Text>
-              <Text style={styles.emptyStateSubtext}>Set some health goals to track your progress</Text>
+            <SkeletonLoader />
+          ) : transformedGoals.length === 0 ? (
+            <View style={styles.emptySection}>
+              <Text style={styles.emptySectionText}>No health goals to display.</Text>
             </View>
+          ) : (
+            <>
+              {transformedGoals.map((goal) => <GoalCard key={goal.id} goal={goal} />)}
+            </>
           )}
         </View>
       </View>
@@ -519,12 +519,7 @@ export default function HealthScreen() {
         </View>
         
         {isLoadingData ? (
-          <>
-            <SkeletonLoader width="100%" height={80} borderRadius={16} style={{ marginBottom: 12 }} />
-            <SkeletonLoader width="100%" height={80} borderRadius={16} style={{ marginBottom: 12 }} />
-            <SkeletonLoader width="100%" height={80} borderRadius={16} style={{ marginBottom: 12 }} />
-            <SkeletonLoader width="100%" height={80} borderRadius={16} />
-          </>
+          <SkeletonLoader />
         ) : healthMetrics.length > 0 ? (
           healthMetrics.slice(0, 4).map((reading) => (
             <FeedbackButton
@@ -552,9 +547,8 @@ export default function HealthScreen() {
             </FeedbackButton>
           ))
         ) : (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>No recent readings</Text>
-            <Text style={styles.emptyStateSubtext}>Your health readings will appear here</Text>
+          <View style={styles.emptySection}>
+            <Text style={styles.emptySectionText}>No recent readings available.</Text>
           </View>
         )}
       </View>
@@ -833,22 +827,26 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
-  emptyState: {
-    alignItems: 'center',
+  emptyStateContainer: {
+    flex: 1,
     justifyContent: 'center',
-    paddingVertical: 40,
-    width: '100%',
+    alignItems: 'center',
+    padding: 20,
+    minHeight: 400,
+  },
+  emptyStateTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: Colors.textPrimary,
+    marginTop: 20,
+    marginBottom: 10,
+    textAlign: 'center',
   },
   emptyStateText: {
     fontSize: 16,
-    fontWeight: '600',
     color: Colors.textSecondary,
-    marginBottom: 8,
-  },
-  emptyStateSubtext: {
-    fontSize: 14,
-    color: Colors.textTertiary,
     textAlign: 'center',
+    lineHeight: 22,
   },
   header: {
     flexDirection: 'row',
@@ -1279,7 +1277,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   helperSection: {
-    backgroundColor: `${Colors.accent}${Colors.opacity.ultraLight}`,
+    backgroundColor: `${Colors.accent}${Colors.opacity.light}`,
     borderRadius: 14,
     padding: 18,
     marginTop: 24,
@@ -1332,5 +1330,22 @@ const styles = StyleSheet.create({
   statusButtonTextSelected: {
     color: Colors.surface,
     fontWeight: '700',
+  },
+  scrollContentContainer: {
+    paddingBottom: 120, // Ensure space for FAB
+    flexGrow: 1,
+  },
+  emptySection: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    width: '100%',
+  },
+  emptySectionText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    textAlign: 'center',
   },
 });

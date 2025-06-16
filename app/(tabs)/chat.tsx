@@ -206,10 +206,10 @@ export default function ChatScreen() {
                 </View>
               ) : conversations.length === 0 ? (
                 <View style={styles.emptyContainer}>
-                  <MessageCircle color="#64748B" size={48} />
-                  <Text style={styles.emptyTitle}>No conversations yet</Text>
+                  <MessageCircle color="#475569" size={48} strokeWidth={1.5} />
+                  <Text style={styles.emptyTitle}>No Conversation History</Text>
                   <Text style={styles.emptyDescription}>
-                    Start your first conversation with the AI health assistant
+                    Your past conversations will appear here after your first call.
                   </Text>
                 </View>
               ) : (
@@ -490,24 +490,26 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   retryText: {
-    color: '#EF4444',
-    fontSize: 14,
+    color: '#F1F5F9',
     fontWeight: '600',
   },
   emptyContainer: {
     flex: 1,
-    alignItems: 'center',
     justifyContent: 'center',
-    gap: 16,
+    alignItems: 'center',
+    padding: 20,
+    marginTop: 20,
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#64748B',
+    fontWeight: 'bold',
+    color: '#CBD5E1',
+    marginTop: 16,
+    marginBottom: 8,
   },
   emptyDescription: {
     fontSize: 14,
-    color: '#64748B',
+    color: '#94A3B8',
     textAlign: 'center',
     lineHeight: 20,
   },

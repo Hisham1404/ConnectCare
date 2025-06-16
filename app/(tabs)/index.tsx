@@ -34,6 +34,14 @@ interface HealthMetric {
   created_at: string;
 }
 
+interface HealthGoal {
+  id: string;
+  title: string;
+  description: string;
+  status: string;
+  created_at: string;
+}
+
 // Silence remaining deprecation warnings until all styles are migrated
 if (Platform.OS === 'web') {
   LogBox.ignoreLogs([
@@ -46,6 +54,7 @@ export default function PatientDashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [healthMetrics, setHealthMetrics] = useState<HealthMetric[]>([]);
+  const [healthGoals, setHealthGoals] = useState<HealthGoal[]>([]);
   const [nextAppointment, setNextAppointment] = useState<any>(null);
   const { profile, loading } = useAuth();
 
@@ -62,6 +71,23 @@ export default function PatientDashboard() {
       return data || [];
     } catch (err) {
       console.error('Error fetching health metrics:', err);
+      return [];
+    }
+  };
+
+  // Function to fetch health goals
+  const fetchHealthGoals = async (patientId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('health_goals')
+        .select('*')
+        .eq('patient_id', patientId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (err) {
+      console.error('Error fetching health goals:', err);
       return [];
     }
   };
@@ -127,33 +153,30 @@ export default function PatientDashboard() {
     }
   };
 
-  // Simulate data loading and fetch health metrics
+  // Load initial data
   useEffect(() => {
     const loadData = async () => {
-      if (profile?.id) {
-        try {
-          const [metricsData, appointmentData] = await Promise.all([
-            fetchHealthMetrics(profile.id),
-            fetchPatientAppointment(profile.id)
-          ]);
-          
-          setHealthMetrics(metricsData);
-          setNextAppointment(appointmentData);
-        } catch (err) {
-          console.error('Error loading health data:', err);
-        }
+      if (!profile?.id) return;
+
+      try {
+        const [metricsData, goalsData, appointmentData] = await Promise.all([
+          fetchHealthMetrics(profile.id),
+          fetchHealthGoals(profile.id),
+          fetchPatientAppointment(profile.id)
+        ]);
+
+        setHealthMetrics(metricsData);
+        setHealthGoals(goalsData);
+        setNextAppointment(appointmentData);
+      } catch (err) {
+        console.error('Error loading dashboard data:', err);
+      } finally {
+        setIsLoadingData(false);
       }
-      
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      setIsLoadingData(false);
     };
-    
-    if (profile?.id) {
-      loadData();
-    } else if (!loading) {
-      setIsLoadingData(false);
-    }
-  }, [profile?.id, loading]);
+
+    loadData();
+  }, [profile?.id]);
 
   // Show loading if either auth or data is loading
   if (loading || isLoadingData) {
@@ -237,8 +260,6 @@ export default function PatientDashboard() {
     },
   ];
 
-
-
   const healthRecommendations = [
     {
       id: '1',
@@ -292,31 +313,223 @@ export default function PatientDashboard() {
     },
   ];
 
-  const recoveryProgress = {
-    overall: 85,
-    painLevel: 3,
-    mobilityScore: 78,
-    sleepQuality: 82,
-    energyLevel: 75,
+  // Calculate dynamic recovery progress based on real patient data
+  const calculateRecoveryProgress = () => {
+    // Base recovery metrics
+    let overallScore = 0;
+    let painLevel = 5; // Default moderate pain
+    let mobilityScore = 50;
+    let sleepQuality = 50;
+    let energyLevel = 50;
+    
+    // Factor 1: Health metrics stability (40% weight)
+    const healthMetricsScore = calculateHealthMetricsScore();
+    overallScore += healthMetricsScore * 0.4;
+    
+    // Factor 2: Goals completion (30% weight)
+    const goalsCompletionScore = calculateGoalsCompletionScore();
+    overallScore += goalsCompletionScore * 0.3;
+    
+    // Factor 3: Medication adherence (20% weight)
+    const medicationAdherenceScore = calculateMedicationAdherenceScore();
+    overallScore += medicationAdherenceScore * 0.2;
+    
+    // Factor 4: Time since treatment start (10% weight)
+    const timeProgressScore = calculateTimeProgressScore();
+    overallScore += timeProgressScore * 0.1;
+    
+    // Calculate specific recovery metrics based on available data
+    painLevel = calculatePainLevel();
+    mobilityScore = calculateMobilityScore();
+    sleepQuality = calculateSleepQuality();
+    energyLevel = calculateEnergyLevel();
+    
+    return {
+      overall: Math.min(Math.max(Math.round(overallScore), 0), 100),
+      painLevel: Math.min(Math.max(painLevel, 0), 10),
+      mobilityScore: Math.min(Math.max(Math.round(mobilityScore), 0), 100),
+      sleepQuality: Math.min(Math.max(Math.round(sleepQuality), 0), 100),
+      energyLevel: Math.min(Math.max(Math.round(energyLevel), 0), 100),
+    };
   };
+
+  // Calculate health metrics score based on how many metrics are in normal range
+  const calculateHealthMetricsScore = () => {
+    if (healthMetrics.length === 0) return 60; // Default score if no data
+    
+    let normalCount = 0;
+    const totalMetrics = healthMetrics.length;
+    
+    healthMetrics.forEach(metric => {
+      const value = parseFloat(metric.value);
+      if (isNaN(value)) return;
+      
+      // Define normal ranges for different metrics
+      let isNormal = false;
+      switch (metric.type.toLowerCase()) {
+        case 'heart rate':
+          isNormal = value >= 60 && value <= 100;
+          break;
+        case 'blood pressure':
+          const systolic = parseFloat(metric.value.split('/')[0]);
+          isNormal = systolic >= 90 && systolic <= 140;
+          break;
+        case 'temperature':
+          isNormal = value >= 97 && value <= 99.5;
+          break;
+        case 'oxygen level':
+          isNormal = value >= 95;
+          break;
+        default:
+          isNormal = true; // Assume normal for unknown metrics
+      }
+      
+      if (isNormal) normalCount++;
+    });
+    
+    return (normalCount / totalMetrics) * 100;
+  };
+
+  // Calculate goals completion score
+  const calculateGoalsCompletionScore = () => {
+    if (healthGoals.length === 0) return 70; // Default score if no goals
+    
+    const completedGoals = healthGoals.filter(goal => goal.status === 'completed').length;
+    const inProgressGoals = healthGoals.filter(goal => goal.status === 'in_progress').length;
+    
+    // Completed goals = 100%, in progress = 50%, not started = 0%
+    const score = ((completedGoals * 100) + (inProgressGoals * 50)) / healthGoals.length;
+    return Math.min(score, 100);
+  };
+
+  // Calculate medication adherence score
+  const calculateMedicationAdherenceScore = () => {
+    const totalMeds = todaysMedications.length;
+    if (totalMeds === 0) return 80; // Default score if no medications
+    
+    const takenMeds = todaysMedications.filter(med => med.taken).length;
+    return (takenMeds / totalMeds) * 100;
+  };
+
+  // Calculate time-based progress (assumes recovery started when patient was created)
+  const calculateTimeProgressScore = () => {
+    if (!profile?.created_at) return 50;
+    
+    const startDate = new Date(profile.created_at);
+    const now = new Date();
+    const daysSinceStart = Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    // Assume typical recovery is 30 days, scale accordingly
+    const progressPercentage = Math.min((daysSinceStart / 30) * 100, 100);
+    return progressPercentage;
+  };
+
+  // Calculate pain level based on recent metrics or goals
+  const calculatePainLevel = () => {
+    // Look for pain-related metrics or goals
+    const painGoal = healthGoals.find(goal => 
+      goal.title.toLowerCase().includes('pain') || 
+      goal.description.toLowerCase().includes('pain')
+    );
+    
+    if (painGoal) {
+      // If pain goal is completed, assume low pain
+      if (painGoal.status === 'completed') return 1;
+      if (painGoal.status === 'in_progress') return 3;
+      return 6; // Not started = higher pain
+    }
+    
+    // Default based on overall health metrics
+    const healthScore = calculateHealthMetricsScore();
+    if (healthScore > 80) return 2;
+    if (healthScore > 60) return 4;
+    return 6;
+  };
+
+  // Calculate mobility score based on activity-related goals and metrics
+  const calculateMobilityScore = () => {
+    const mobilityGoals = healthGoals.filter(goal => 
+      goal.title.toLowerCase().includes('walk') ||
+      goal.title.toLowerCase().includes('exercise') ||
+      goal.title.toLowerCase().includes('mobility') ||
+      goal.description.toLowerCase().includes('walk') ||
+      goal.description.toLowerCase().includes('exercise')
+    );
+    
+    if (mobilityGoals.length > 0) {
+      const completedMobility = mobilityGoals.filter(goal => goal.status === 'completed').length;
+      const inProgressMobility = mobilityGoals.filter(goal => goal.status === 'in_progress').length;
+      
+      return ((completedMobility * 100) + (inProgressMobility * 60)) / mobilityGoals.length;
+    }
+    
+    // Fallback to overall health metrics
+    return calculateHealthMetricsScore() * 0.8; // Slightly lower than health metrics
+  };
+
+  // Calculate sleep quality based on sleep-related goals
+  const calculateSleepQuality = () => {
+    const sleepGoals = healthGoals.filter(goal => 
+      goal.title.toLowerCase().includes('sleep') ||
+      goal.description.toLowerCase().includes('sleep') ||
+      goal.description.toLowerCase().includes('rest')
+    );
+    
+    if (sleepGoals.length > 0) {
+      const completedSleep = sleepGoals.filter(goal => goal.status === 'completed').length;
+      const inProgressSleep = sleepGoals.filter(goal => goal.status === 'in_progress').length;
+      
+      return ((completedSleep * 100) + (inProgressSleep * 70)) / sleepGoals.length;
+    }
+    
+    // Default based on overall progress
+    const overallHealth = calculateHealthMetricsScore();
+    return Math.min(overallHealth + 10, 100); // Sleep often improves with health
+  };
+
+  // Calculate energy level based on overall health and activity
+  const calculateEnergyLevel = () => {
+    const healthScore = calculateHealthMetricsScore();
+    const goalsScore = calculateGoalsCompletionScore();
+    const medicationScore = calculateMedicationAdherenceScore();
+    
+    // Energy is a combination of health metrics, goal completion, and medication adherence
+    return (healthScore * 0.4) + (goalsScore * 0.3) + (medicationScore * 0.3);
+  };
+
+  // Calculate days since recovery started
+  const getDaysSinceRecoveryStart = () => {
+    if (!profile?.created_at) return 1;
+    
+    const startDate = new Date(profile.created_at);
+    const now = new Date();
+    const daysSinceStart = Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    return Math.max(daysSinceStart, 1); // At least day 1
+  };
+
+  // Get the dynamic recovery progress
+  const recoveryProgress = calculateRecoveryProgress();
 
   const onRefresh = async () => {
     setRefreshing(true);
-    
+
     if (profile?.id) {
       try {
-        const [metricsData, appointmentData] = await Promise.all([
+        const [metricsData, goalsData, appointmentData] = await Promise.all([
           fetchHealthMetrics(profile.id),
+          fetchHealthGoals(profile.id),
           fetchPatientAppointment(profile.id)
         ]);
-        
+
         setHealthMetrics(metricsData);
+        setHealthGoals(goalsData);
         setNextAppointment(appointmentData);
       } catch (err) {
-        console.error('Error refreshing health data:', err);
+        console.error('Error refreshing dashboard data:', err);
       }
     }
-    
+
     setTimeout(() => setRefreshing(false), 1000);
   };
 
@@ -464,7 +677,7 @@ export default function PatientDashboard() {
                 <>
                   <Text style={styles.greeting}>Good Morning</Text>
                   <Text style={styles.userName}>{profile?.full_name || 'Patient'}</Text>
-                  <Text style={styles.healthStatus}>Day 12 of recovery</Text>
+                  <Text style={styles.healthStatus}>Day {getDaysSinceRecoveryStart()} of recovery</Text>
                 </>
               )}
             </View>
@@ -487,8 +700,10 @@ export default function PatientDashboard() {
       </View>
 
       {/* Recovery Progress Overview */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Recovery Progress</Text>
+      <View style={[styles.section, { marginTop: 8 }]}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Recovery Progress</Text>
+        </View>
         
         {isLoadingData ? (
           <View style={styles.progressCard}>
@@ -530,6 +745,12 @@ export default function PatientDashboard() {
                 <Text style={styles.progressMetricValue}>{recoveryProgress.energyLevel}%</Text>
               </View>
             </View>
+            
+            <View style={styles.progressInfo}>
+              <Text style={styles.progressInfoText}>
+                Progress calculated from health metrics, goals completion, and medication adherence
+              </Text>
+            </View>
           </View>
         )}
       </View>
@@ -542,8 +763,10 @@ export default function PatientDashboard() {
             onPress={() => console.log('View all medications')}
             style={styles.seeAllButton}
           >
-            <Text style={styles.seeAll}>View All</Text>
-            <ChevronRight color={Colors.accent} size={16} />
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={styles.seeAll}>View All</Text>
+              <ChevronRight color={Colors.accent} size={16} />
+            </View>
           </FeedbackButton>
         </View>
 
@@ -577,8 +800,10 @@ export default function PatientDashboard() {
             }}
             style={styles.viewAllButton}
           >
-            <Text style={styles.viewAllText}>View All</Text>
-            <ChevronRight color={Colors.accent} size={16} />
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={styles.viewAllText}>View All</Text>
+              <ChevronRight color={Colors.accent} size={16} />
+            </View>
           </FeedbackButton>
         </View>
         
@@ -646,7 +871,9 @@ export default function PatientDashboard() {
 
       {/* Next Appointment */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Next Appointment</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Next Appointment</Text>
+        </View>
         
         {isLoadingData ? (
           <SkeletonLoader width="100%" height={180} borderRadius={16} />
@@ -735,12 +962,12 @@ export default function PatientDashboard() {
             {isLoadingData ? (
               <SkeletonLoader width={80} height={16} />
             ) : (
-              <>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Text style={styles.completionText}>
                   {getCompletedRecommendations()}/{healthRecommendations.length} completed
                 </Text>
                 <ChevronRight color={Colors.success} size={16} />
-              </>
+              </View>
             )}
           </View>
         </View>
@@ -766,7 +993,9 @@ export default function PatientDashboard() {
 
       {/* Quick Actions */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+        </View>
         
         <View style={styles.quickActionsGrid}>
           {isLoadingData ? (
@@ -921,7 +1150,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   sectionTitle: {
     fontSize: 20,
@@ -931,12 +1160,15 @@ const styles = StyleSheet.create({
   seeAllButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 8,
   },
   seeAll: {
     fontSize: 14,
     color: Colors.accent,
     fontWeight: '600',
+    marginRight: 4,
   },
   completionContainer: {
     flexDirection: 'row',
@@ -971,8 +1203,8 @@ const styles = StyleSheet.create({
   progressHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
+    alignItems: 'flex-start',
+    marginBottom: 20,
   },
   progressTitle: {
     fontSize: 18,
@@ -983,6 +1215,7 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: '900',
     color: Colors.primary,
+    textAlign: 'right',
     ...textShadow(`${Colors.primary}${Colors.opacity.light}`, 2),
   },
   progressBarContainer: {
@@ -1374,12 +1607,15 @@ const styles = StyleSheet.create({
   viewAllButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 8,
   },
   viewAllText: {
     fontSize: 14,
     color: Colors.accent,
     fontWeight: '600',
+    marginRight: 4,
   },
   emptyHealthMetrics: {
     flex: 1,
@@ -1397,6 +1633,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.textTertiary,
     fontWeight: '500',
+    marginBottom: 16,
   },
   startTrackingButton: {
     flexDirection: 'row',
@@ -1411,5 +1648,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.surface,
     fontWeight: '600',
+  },
+  progressInfo: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  progressInfoText: {
+    fontSize: 10,
+    color: Colors.textTertiary,
+    fontWeight: '500',
   },
 });

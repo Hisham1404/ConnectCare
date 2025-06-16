@@ -41,6 +41,14 @@ export default function PatientsTab({
     return matchesSearch && matchesFilter;
   });
 
+  const renderEmptyState = (title: string, text: string) => (
+    <View style={styles.emptyState}>
+      <User color="#d1d5db" size={48} />
+      <Text style={styles.emptyStateTitle}>{title}</Text>
+      <Text style={styles.emptyStateText}>{text}</Text>
+    </View>
+  );
+
   return (
     <View style={styles.container}>
       {/* Compact Search and Filter */}
@@ -97,17 +105,16 @@ export default function PatientsTab({
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         showsVerticalScrollIndicator={false}
       >
-        {filteredPatients.length === 0 && !error ? (
-          <View style={styles.emptyState}>
-            <User color="#6b7280" size={48} />
-            <Text style={styles.emptyStateTitle}>No patients found</Text>
-            <Text style={styles.emptyStateText}>
-              {patients.length === 0 
-                ? "You don't have any assigned patients yet."
-                : `No patients match your search "${searchQuery}" or filter "${selectedFilter}".`
-              }
-            </Text>
-          </View>
+        {!error && patients.length === 0 && !refreshing ? (
+          renderEmptyState(
+            'No Patients Assigned', 
+            'You have not been assigned any patients yet. Please contact your administrator.'
+          )
+        ) : !error && filteredPatients.length === 0 && !refreshing ? (
+          renderEmptyState(
+            'No Patients Found',
+            `No patients match your search for "${searchQuery}" with the "${selectedFilter}" filter.`
+          )
         ) : (
           filteredPatients.map((patient) => (
             <Link key={patient.id} href={`/patient/${patient.id}`} asChild>
@@ -288,7 +295,7 @@ const styles = StyleSheet.create({
   },
   emptyStateTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: 'bold',
     color: '#374151',
     marginTop: 16,
     marginBottom: 8,
@@ -297,6 +304,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6b7280',
     textAlign: 'center',
+    paddingHorizontal: 30,
     lineHeight: 20,
   },
   patientList: {
