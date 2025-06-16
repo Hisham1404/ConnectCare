@@ -53,7 +53,7 @@ export default function DoctorDashboard() {
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('overview');
   const [isMonitoring, setIsMonitoring] = useState(false);
-  const [selectedPatientForMonitoring, setSelectedPatientForMonitoring] = useState('patient-1');
+  const [selectedPatientForMonitoring, setSelectedPatientForMonitoring] = useState('');
   const [patients, setPatients] = useState<TransformedPatient[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -154,6 +154,11 @@ export default function DoctorDashboard() {
         const patientsData = await fetchDoctorPatients(user.id);
         setPatients(patientsData);
         
+        // Auto-select first patient for monitoring if available
+        if (patientsData.length > 0 && !selectedPatientForMonitoring) {
+          setSelectedPatientForMonitoring(patientsData[0].id);
+        }
+        
         // Generate appointments with real patient names
         const appointments = generateTodaysAppointments(patientsData);
         setTodaysAppointments(appointments);
@@ -189,6 +194,16 @@ export default function DoctorDashboard() {
     try {
       const patientsData = await fetchDoctorPatients(user.id);
       setPatients(patientsData);
+      
+      // Ensure selected patient is still valid, or select first patient
+      if (patientsData.length > 0) {
+        const currentPatientExists = patientsData.some(p => p.id === selectedPatientForMonitoring);
+        if (!currentPatientExists) {
+          setSelectedPatientForMonitoring(patientsData[0].id);
+        }
+      } else {
+        setSelectedPatientForMonitoring('');
+      }
       
       // Generate appointments with real patient names
       const appointments = generateTodaysAppointments(patientsData);

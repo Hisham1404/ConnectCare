@@ -144,6 +144,13 @@ export default function MonitoringTab({
     }
   };
 
+  // Auto-select first patient if none selected and patients are available
+  useEffect(() => {
+    if (!selectedPatientForMonitoring && patients.length > 0) {
+      onSelectPatient(patients[0].id);
+    }
+  }, [patients, selectedPatientForMonitoring, onSelectPatient]);
+
   // Load vitals when selected patient changes
   useEffect(() => {
     if (selectedPatientForMonitoring) {
@@ -244,25 +251,32 @@ export default function MonitoringTab({
 
         {/* Compact Patient Selector */}
         <View style={styles.patientSelectorContainer}>
-          {patients.map((patient) => (
-            <TouchableOpacity
-              key={patient.id}
-              style={[
-                styles.patientSelectorCard,
-                selectedPatientForMonitoring === patient.id && styles.selectedPatientCard
-              ]}
-              onPress={() => onSelectPatient(patient.id)}
-            >
-              <View style={styles.selectorAvatar}>
-                <User size={16} color="#ffffff" />
-              </View>
-              <Text style={styles.selectorName}>{patient.name.split(' ')[0]}</Text>
-              <View style={[
-                styles.selectorPriority,
-                { backgroundColor: getPriorityColor(patient.priority) }
-              ]} />
-            </TouchableOpacity>
-          ))}
+          {patients.length > 0 ? (
+            patients.map((patient) => (
+              <TouchableOpacity
+                key={patient.id}
+                style={[
+                  styles.patientSelectorCard,
+                  selectedPatientForMonitoring === patient.id && styles.selectedPatientCard
+                ]}
+                onPress={() => onSelectPatient(patient.id)}
+              >
+                <View style={styles.selectorAvatar}>
+                  <User size={16} color="#ffffff" />
+                </View>
+                <Text style={styles.selectorName}>{patient.name.split(' ')[0]}</Text>
+                <View style={[
+                  styles.selectorPriority,
+                  { backgroundColor: getPriorityColor(patient.priority) }
+                ]} />
+              </TouchableOpacity>
+            ))
+          ) : (
+            <View style={styles.noPatientsMessage}>
+              <User color="#6b7280" size={20} />
+              <Text style={styles.noPatientsText}>No patients assigned</Text>
+            </View>
+          )}
         </View>
       </View>
 
@@ -285,9 +299,26 @@ export default function MonitoringTab({
             </TouchableOpacity>
           </View>
         )}
-        
-        <View style={styles.vitalsGrid}>
-          {vitalsConfig.map((vital, index) => (
+
+        {!selectedPatientForMonitoring && patients.length === 0 ? (
+          <View style={styles.emptyStateContainer}>
+            <User color="#6b7280" size={48} />
+            <Text style={styles.emptyStateTitle}>No Patients Available</Text>
+            <Text style={styles.emptyStateText}>
+              No patients are currently assigned to you for monitoring.
+            </Text>
+          </View>
+        ) : !selectedPatientForMonitoring ? (
+          <View style={styles.emptyStateContainer}>
+            <Monitor color="#6b7280" size={48} />
+            <Text style={styles.emptyStateTitle}>Select a Patient</Text>
+            <Text style={styles.emptyStateText}>
+              Choose a patient from above to start monitoring their vitals.
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.vitalsGrid}>
+            {vitalsConfig.map((vital, index) => (
             <View key={index} style={styles.vitalCard}>
               <View style={styles.vitalCardHeader}>
                 <View style={[styles.vitalIcon, { backgroundColor: `${vital.color}15` }]}>
@@ -350,8 +381,9 @@ export default function MonitoringTab({
                 )}
               </View>
             </View>
-          ))}
-        </View>
+                      ))}
+          </View>
+        )}
 
         {/* Show selected patient info */}
         {selectedPatientForMonitoring && patients.length > 0 && (
@@ -567,5 +599,40 @@ const styles = StyleSheet.create({
   selectedPatientSubtitle: {
     fontSize: 12,
     color: '#6b7280',
+  },
+  noPatientsMessage: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 12,
+    backgroundColor: '#f8fafc',
+    borderRadius: 8,
+    flex: 1,
+    justifyContent: 'center',
+  },
+  noPatientsText: {
+    fontSize: 12,
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+  emptyStateContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+    minHeight: 200,
+  },
+  emptyStateTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#374151',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyStateText: {
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });
