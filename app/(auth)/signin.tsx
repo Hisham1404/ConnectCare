@@ -25,29 +25,92 @@ export default function SignInScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
 
   const { signIn, profile } = useAuth();
 
+  // Clear field errors when user starts typing
+  const clearFieldError = (field: string) => {
+    if (fieldErrors[field]) {
+      setFieldErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
+  // Validate individual fields
+  const validateField = (field: string, value: string): string | null => {
+    switch (field) {
+      case 'email':
+        if (!value.trim()) return 'Email is required';
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(value)) return 'Please enter a valid email address';
+        return null;
+      case 'password':
+        if (!value) return 'Password is required';
+        if (value.length < 6) return 'Password must be at least 6 characters';
+        return null;
+      default:
+        return null;
+    }
+  };
+
+  // Enhanced form validation
+  const validateForm = (): boolean => {
+    const errors: {[key: string]: string} = {};
+    
+    const emailError = validateField('email', email);
+    if (emailError) errors.email = emailError;
+    
+    const passwordError = validateField('password', password);
+    if (passwordError) errors.password = passwordError;
+    
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSignIn = async () => {
-    if (!email || !password) {
-      setError('Please fill in all fields');
+    // Clear previous errors
+    setError('');
+    setFieldErrors({});
+    
+    // Validate form
+    if (!validateForm()) {
+      setError('Please fix the errors above');
       return;
     }
 
     setLoading(true);
-    setError('');
+    try {
+      const { error } = await signIn(email, password);
 
-    const { error } = await signIn(email, password);
-
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-    } else {
+      if (error) {
+        // Provide more specific error messages
+        let errorMessage = error.message;
+        
+        if (error.message.includes('Invalid login credentials')) {
+          errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+        } else if (error.message.includes('Email not confirmed')) {
+          errorMessage = 'Please check your email and click the confirmation link before signing in.';
+        } else if (error.message.includes('Too many requests')) {
+          errorMessage = 'Too many sign-in attempts. Please wait a few minutes and try again.';
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorMessage = 'Network error. Please check your connection and try again.';
+        } else if (error.message.includes('Invalid email')) {
+          errorMessage = 'Please enter a valid email address.';
+        }
+        
+        setError(errorMessage);
+      }
+    } catch (err) {
+      console.error('Unexpected error during signin:', err);
+      setError('An unexpected error occurred. Please try again.');
+    } finally {
       setLoading(false);
     }
   };
-
-
 
   const handleBack = () => {
     try {
@@ -125,12 +188,18 @@ export default function SignInScreen() {
                 placeholder="Enter your email"
                 placeholderTextColor={Colors.textTertiary}
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(value) => {
+                  clearFieldError('email');
+                  setEmail(value);
+                }}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
               />
             </View>
+            {fieldErrors.email && (
+              <Text style={styles.fieldErrorText}>{fieldErrors.email}</Text>
+            )}
           </View>
 
           {/* Password Input */}
@@ -143,7 +212,10 @@ export default function SignInScreen() {
                 placeholder="Enter your password"
                 placeholderTextColor={Colors.textTertiary}
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={(value) => {
+                  clearFieldError('password');
+                  setPassword(value);
+                }}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -159,6 +231,9 @@ export default function SignInScreen() {
                 )}
               </TouchableOpacity>
             </View>
+            {fieldErrors.password && (
+              <Text style={styles.fieldErrorText}>{fieldErrors.password}</Text>
+            )}
           </View>
 
           {/* Forgot Password Link */}
@@ -182,8 +257,6 @@ export default function SignInScreen() {
               <Text style={styles.signInButtonText}>Sign In</Text>
             )}
           </FeedbackButton>
-
-
 
           {/* Sign Up Link */}
           <View style={styles.signUpContainer}>
@@ -362,5 +435,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.accent,
     fontWeight: '600',
+  },
+  fieldErrorText: {
+    fontSize: 12,
+    color: Colors.error,
+    marginTop: 4,
+    marginLeft: 4,
   },
 });

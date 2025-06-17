@@ -5,6 +5,7 @@ import { router, Redirect } from 'expo-router';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
+import { Colors } from '../constants/Colors';
 
 // Import components
 import DashboardHeader from '../components/dashboard/DashboardHeader';
@@ -274,13 +275,7 @@ export default function DoctorDashboard() {
           />
         );
       default:
-        return (
-          <OverviewTab
-            todaysAppointments={todaysAppointments}
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-          />
-        );
+        return null;
     }
   };
 
@@ -294,6 +289,15 @@ export default function DoctorDashboard() {
         showBackButton={true}
         onBackPress={() => router.replace('/')}
       />
+
+      {error && (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={onRefresh}>
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <View style={styles.mainContent}>
         {renderTabContent()}
@@ -310,7 +314,7 @@ export default function DoctorDashboard() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: Colors.background,
   },
   mainContent: {
     flex: 1,
@@ -319,12 +323,34 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
-    gap: 16,
+    backgroundColor: Colors.background,
   },
   loadingText: {
+    marginTop: 10,
     fontSize: 16,
-    color: '#6b7280',
-    fontWeight: '500',
+    color: Colors.textSecondary,
+  },
+  errorContainer: {
+    backgroundColor: Colors.error,
+    padding: 15,
+    margin: 15,
+    borderRadius: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  errorText: {
+    color: 'white',
+    fontSize: 16,
+  },
+  retryButton: {
+    backgroundColor: 'white',
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: Colors.error,
+    fontWeight: 'bold',
   },
 });

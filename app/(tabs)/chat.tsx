@@ -22,11 +22,13 @@ export default function ChatScreen() {
     realtime: true
   });
   const [showNewCall, setShowNewCall] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   if (loading || conversationsLoading) {
     return (
       <View style={styles.loadingContainer}>
         <LoadingSpinner size="large" />
+        <Text style={styles.loadingText}>Loading conversations...</Text>
       </View>
     );
   }
@@ -50,6 +52,20 @@ export default function ChatScreen() {
       return `${diffDays - 1} days ago`;
     } else {
       return date.toLocaleDateString();
+    }
+  };
+
+  const handleRetry = async () => {
+    if (retryCount >= 3) {
+      return; // Max retries reached
+    }
+    
+    setRetryCount(prev => prev + 1);
+    try {
+      await refresh();
+      setRetryCount(0); // Reset on success
+    } catch (err) {
+      console.error('Retry failed:', err);
     }
   };
 
@@ -199,9 +215,26 @@ export default function ChatScreen() {
 
               {error ? (
                 <View style={styles.errorContainer}>
-                  <Text style={styles.errorText}>Failed to load conversations</Text>
-                  <TouchableOpacity onPress={refresh} style={styles.retryButton}>
-                    <Text style={styles.retryText}>Try Again</Text>
+                  <Text style={styles.errorText}>
+                    {error.includes('network') || error.includes('fetch') 
+                      ? 'Network error. Please check your connection and try again.'
+                      : 'Failed to load conversations. Please try again.'
+                    }
+                  </Text>
+                  <TouchableOpacity 
+                    onPress={handleRetry} 
+                    style={[
+                      styles.retryButton,
+                      retryCount >= 3 && styles.disabledButton
+                    ]}
+                    disabled={retryCount >= 3}
+                  >
+                    <Text style={[
+                      styles.retryText,
+                      retryCount >= 3 && styles.disabledButtonText
+                    ]}>
+                      {retryCount >= 3 ? 'Max Retries' : 'Retry'}
+                    </Text>
                   </TouchableOpacity>
                 </View>
               ) : conversations.length === 0 ? (
@@ -473,25 +506,38 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   errorContainer: {
-    flex: 1,
+    backgroundColor: '#1E293B',
+    padding: 20,
+    borderRadius: 12,
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 16,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: '#EF4444',
   },
   errorText: {
-    fontSize: 16,
     color: '#EF4444',
+    fontSize: 16,
     textAlign: 'center',
+    marginBottom: 16,
+    fontWeight: '500',
   },
   retryButton: {
+    backgroundColor: '#EF4444',
     paddingHorizontal: 20,
     paddingVertical: 10,
-    backgroundColor: 'rgba(239, 68, 68, 0.2)',
-    borderRadius: 12,
+    borderRadius: 8,
   },
   retryText: {
-    color: '#F1F5F9',
+    color: '#FFFFFF',
+    fontSize: 14,
     fontWeight: '600',
+  },
+  disabledButton: {
+    backgroundColor: '#64748B',
+    opacity: 0.6,
+  },
+  disabledButtonText: {
+    opacity: 0.8,
   },
   emptyContainer: {
     flex: 1,
@@ -529,6 +575,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#0F172A',
+    gap: 16,
+  },
+  loadingText: {
+    color: '#94A3B8',
+    fontSize: 16,
+    fontWeight: '500',
   },
 });

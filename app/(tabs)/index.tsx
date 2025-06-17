@@ -56,11 +56,13 @@ export default function PatientDashboard() {
   const [healthMetrics, setHealthMetrics] = useState<HealthMetric[]>([]);
   const [healthGoals, setHealthGoals] = useState<HealthGoal[]>([]);
   const [nextAppointment, setNextAppointment] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
   const { profile, loading } = useAuth();
 
   // Fetch health metrics from database
   const fetchHealthMetrics = async (userId: string) => {
     try {
+      setError(null);
       const { data, error } = await supabase
         .from('health_metrics')
         .select('*')
@@ -71,6 +73,8 @@ export default function PatientDashboard() {
       return data || [];
     } catch (err) {
       console.error('Error fetching health metrics:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load health metrics. Please check your connection and try again.';
+      setError(errorMessage);
       return [];
     }
   };
@@ -78,6 +82,7 @@ export default function PatientDashboard() {
   // Function to fetch health goals
   const fetchHealthGoals = async (patientId: string) => {
     try {
+      setError(null);
       const { data, error } = await supabase
         .from('health_goals')
         .select('*')
@@ -88,6 +93,8 @@ export default function PatientDashboard() {
       return data || [];
     } catch (err) {
       console.error('Error fetching health goals:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load health goals. Please check your connection and try again.';
+      setError(errorMessage);
       return [];
     }
   };
@@ -95,6 +102,7 @@ export default function PatientDashboard() {
   // Fetch patient's next appointment from doctor's appointments
   const fetchPatientAppointment = async (patientId: string) => {
     try {
+      setError(null);
       // First, get the patient's doctor information
       const { data: patientData, error: patientError } = await supabase
         .from('profiles')
@@ -149,6 +157,8 @@ export default function PatientDashboard() {
       };
     } catch (err) {
       console.error('Error fetching patient appointment:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load appointment data. Please check your connection and try again.';
+      setError(errorMessage);
       return null;
     }
   };
@@ -158,6 +168,7 @@ export default function PatientDashboard() {
     const loadData = async () => {
       if (!profile?.id) return;
 
+      setError(null);
       try {
         const [metricsData, goalsData, appointmentData] = await Promise.all([
           fetchHealthMetrics(profile.id),
@@ -170,6 +181,8 @@ export default function PatientDashboard() {
         setNextAppointment(appointmentData);
       } catch (err) {
         console.error('Error loading dashboard data:', err);
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load dashboard data. Please check your connection and try again.';
+        setError(errorMessage);
       } finally {
         setIsLoadingData(false);
       }
@@ -513,6 +526,7 @@ export default function PatientDashboard() {
 
   const onRefresh = async () => {
     setRefreshing(true);
+    setError(null);
 
     if (profile?.id) {
       try {
@@ -527,6 +541,8 @@ export default function PatientDashboard() {
         setNextAppointment(appointmentData);
       } catch (err) {
         console.error('Error refreshing dashboard data:', err);
+        const errorMessage = err instanceof Error ? err.message : 'Failed to refresh dashboard data. Please check your connection and try again.';
+        setError(errorMessage);
       }
     }
 
@@ -641,6 +657,22 @@ export default function PatientDashboard() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       showsVerticalScrollIndicator={false}
     >
+      {/* Error Display */}
+      {error && (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity 
+            style={styles.retryButton}
+            onPress={() => {
+              setError(null);
+              onRefresh();
+            }}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Header */}
       <View style={styles.header}>
         <FeedbackButton
@@ -1659,5 +1691,33 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: Colors.textTertiary,
     fontWeight: '500',
+  },
+  errorContainer: {
+    backgroundColor: `${Colors.error}${Colors.opacity.light}`,
+    margin: 20,
+    marginTop: 10,
+    padding: 16,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  errorText: {
+    flex: 1,
+    color: Colors.error,
+    fontSize: 14,
+    fontWeight: '500',
+    marginRight: 12,
+  },
+  retryButton: {
+    backgroundColor: Colors.error,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: Colors.surface,
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

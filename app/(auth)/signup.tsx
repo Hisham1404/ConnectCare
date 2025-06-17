@@ -30,30 +30,83 @@ export default function SignUpScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
   const [userRole, setUserRole] = useState<'patient' | 'doctor'>('patient');
 
   const { signUp, profile } = useAuth();
 
+  // Clear errors when user starts typing
+  const clearFieldError = (field: string) => {
+    if (fieldErrors[field]) {
+      setFieldErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
+  // Validate individual fields
+  const validateField = (field: string, value: string): string | null => {
+    switch (field) {
+      case 'fullName':
+        if (!value.trim()) return 'Full name is required';
+        if (value.trim().length < 2) return 'Full name must be at least 2 characters';
+        return null;
+      case 'email':
+        if (!value.trim()) return 'Email is required';
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(value)) return 'Please enter a valid email address';
+        return null;
+      case 'password':
+        if (!value) return 'Password is required';
+        if (value.length < 6) return 'Password must be at least 6 characters';
+        if (!/(?=.*[a-z])(?=.*[A-Z])/.test(value)) return 'Password must contain both uppercase and lowercase letters';
+        return null;
+      case 'confirmPassword':
+        if (!value) return 'Please confirm your password';
+        if (value !== formData.password) return 'Passwords do not match';
+        return null;
+      default:
+        return null;
+    }
+  };
+
+  // Enhanced form validation
+  const validateForm = (): boolean => {
+    const errors: {[key: string]: string} = {};
+    
+    // Validate all required fields
+    const fullNameError = validateField('fullName', formData.fullName);
+    if (fullNameError) errors.fullName = fullNameError;
+    
+    const emailError = validateField('email', formData.email);
+    if (emailError) errors.email = emailError;
+    
+    const passwordError = validateField('password', formData.password);
+    if (passwordError) errors.password = passwordError;
+    
+    const confirmPasswordError = validateField('confirmPassword', formData.confirmPassword);
+    if (confirmPasswordError) errors.confirmPassword = confirmPasswordError;
+    
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSignUp = async () => {
-    const { fullName, email, password, confirmPassword, doctorId } = formData;
-
-    if (!fullName || !email || !password || !confirmPassword) {
-      setError('Please fill in all required fields');
+    // Clear previous errors
+    setError('');
+    setFieldErrors({});
+    
+    // Validate form
+    if (!validateForm()) {
+      setError('Please fix the errors above');
       return;
     }
 
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      return;
-    }
+    const { fullName, email, password, doctorId } = formData;
 
     setLoading(true);
-    setError('');
 
     console.log('📝 Form data before signup:', formData);
     console.log('👤 User role:', userRole);
@@ -74,15 +127,35 @@ export default function SignUpScreen() {
 
     console.log('📊 Final profile data:', profileData);
 
-    const { error } = await signUp(email, password, profileData);
+    try {
+      const { error } = await signUp(email, password, profileData);
 
-    if (error) {
-      setError(error.message);
+      if (error) {
+        // Provide more specific error messages
+        let errorMessage = error.message;
+        
+        if (error.message.includes('User already registered')) {
+          errorMessage = 'An account with this email already exists. Please sign in instead.';
+        } else if (error.message.includes('Invalid email')) {
+          errorMessage = 'Please enter a valid email address.';
+        } else if (error.message.includes('Password should be at least 6 characters')) {
+          errorMessage = 'Password must be at least 6 characters long.';
+        } else if (error.message.includes('doctor_id')) {
+          errorMessage = 'Doctor with that Reference ID was not found. Please check the ID or leave it blank to assign later.';
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorMessage = 'Network error. Please check your connection and try again.';
+        }
+        
+        setError(errorMessage);
+      } else {
+        // Show success message and navigate
+        router.replace('/(auth)/signin?checkEmail=true');
+      }
+    } catch (err) {
+      console.error('Unexpected error during signup:', err);
+      setError('An unexpected error occurred. Please try again.');
+    } finally {
       setLoading(false);
-    } else {
-      // Show success message and navigate
-      setLoading(false);
-      router.replace('/(auth)/signin?checkEmail=true');
     }
   };
 
@@ -97,6 +170,9 @@ export default function SignUpScreen() {
   }, [profile]);
 
   const updateFormData = (field: string, value: string) => {
+    // Clear field error when user starts typing
+    clearFieldError(field);
+    
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -206,6 +282,9 @@ export default function SignUpScreen() {
                 autoCorrect={false}
               />
             </View>
+            {fieldErrors.fullName && (
+              <Text style={styles.fieldErrorText}>{fieldErrors.fullName}</Text>
+            )}
           </View>
 
           {/* Doctor Search Input - Only for Patients */}
@@ -241,6 +320,9 @@ export default function SignUpScreen() {
                 autoCorrect={false}
               />
             </View>
+            {fieldErrors.email && (
+              <Text style={styles.fieldErrorText}>{fieldErrors.email}</Text>
+            )}
           </View>
 
           {/* Password Input */}
@@ -269,6 +351,9 @@ export default function SignUpScreen() {
                 )}
               </TouchableOpacity>
             </View>
+            {fieldErrors.password && (
+              <Text style={styles.fieldErrorText}>{fieldErrors.password}</Text>
+            )}
           </View>
 
           {/* Confirm Password Input */}
@@ -297,6 +382,9 @@ export default function SignUpScreen() {
                 )}
               </TouchableOpacity>
             </View>
+            {fieldErrors.confirmPassword && (
+              <Text style={styles.fieldErrorText}>{fieldErrors.confirmPassword}</Text>
+            )}
           </View>
 
           {/* Terms and Privacy */}
@@ -531,5 +619,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.accent,
     fontWeight: '600',
+  },
+  fieldErrorText: {
+    fontSize: 12,
+    color: Colors.error,
+    marginTop: 4,
+    marginLeft: 4,
   },
 });

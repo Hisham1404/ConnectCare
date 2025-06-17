@@ -11,7 +11,7 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
-import { Heart, Activity, Thermometer, Droplets, Weight, Ruler, TrendingUp, TrendingDown, Calendar, Clock, Plus, ChartBar as BarChart3, ChartLine as LineChart, Target, Award, Zap } from 'lucide-react-native';
+import { Heart, Activity, Thermometer, Droplets, Weight, Ruler, TrendingUp, TrendingDown, Calendar, Clock, Plus, ChartBar as BarChart3, ChartLine as LineChart, Target, Award, Zap, X } from 'lucide-react-native';
 import { Colors } from '../../constants/Colors';
 import FeedbackButton from '../../components/ui/FeedbackButton';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
@@ -48,6 +48,7 @@ export default function HealthScreen() {
   const [healthMetrics, setHealthMetrics] = useState<HealthMetric[]>([]);
   const [healthGoals, setHealthGoals] = useState<HealthGoal[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   
   // Modal and form state
   const [showAddMetricModal, setShowAddMetricModal] = useState(false);
@@ -69,6 +70,7 @@ export default function HealthScreen() {
   // Fetch health metrics from database
   const fetchHealthMetrics = async (userId: string) => {
     try {
+      setError(null);
       const { data, error } = await supabase
         .from('health_metrics')
         .select('*')
@@ -79,7 +81,8 @@ export default function HealthScreen() {
       return data || [];
     } catch (err) {
       console.error('Error fetching health metrics:', err);
-      setError('Failed to load health metrics');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load health metrics. Please check your connection and try again.';
+      setError(errorMessage);
       return [];
     }
   };
@@ -87,6 +90,7 @@ export default function HealthScreen() {
   // Fetch health goals from database
   const fetchHealthGoals = async (userId: string) => {
     try {
+      setError(null);
       const { data, error } = await supabase
         .from('health_goals')
         .select('*')
@@ -97,7 +101,8 @@ export default function HealthScreen() {
       return data || [];
     } catch (err) {
       console.error('Error fetching health goals:', err);
-      setError('Failed to load health goals');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load health goals. Please check your connection and try again.';
+      setError(errorMessage);
       return [];
     }
   };
@@ -120,7 +125,8 @@ export default function HealthScreen() {
         setHealthGoals(goalsData);
       } catch (err) {
         console.error('Error loading health data:', err);
-        setError('Failed to load health data');
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load health data. Please check your connection and try again.';
+        setError(errorMessage);
       } finally {
         setIsLoadingData(false);
       }
@@ -154,7 +160,8 @@ export default function HealthScreen() {
       setHealthGoals(goalsData);
     } catch (err) {
       console.error('Error refreshing health data:', err);
-      setError('Failed to refresh health data');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to refresh health data. Please check your connection and try again.';
+      setError(errorMessage);
     } finally {
       setRefreshing(false);
     }
@@ -166,11 +173,12 @@ export default function HealthScreen() {
     
     // Validate form data
     if (!formData.type || !formData.value || !formData.unit) {
-      Alert.alert('Error', 'Please fill in all fields');
+      setSubmitError('Please fill in all fields');
       return;
     }
 
     setIsSubmitting(true);
+    setSubmitError(null);
 
     try {
       const { error } = await supabase
@@ -195,7 +203,8 @@ export default function HealthScreen() {
 
     } catch (err) {
       console.error('Error adding health metric:', err);
-      Alert.alert('Error', 'Failed to add health metric. Please try again.');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to add health metric. Please check your connection and try again.';
+      setSubmitError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -207,11 +216,12 @@ export default function HealthScreen() {
     
     // Validate form data
     if (!goalFormData.title || !goalFormData.description) {
-      Alert.alert('Error', 'Please fill in title and description');
+      setSubmitError('Please fill in title and description');
       return;
     }
 
     setIsSubmitting(true);
+    setSubmitError(null);
 
     try {
       const { error } = await supabase
@@ -236,7 +246,8 @@ export default function HealthScreen() {
 
     } catch (err) {
       console.error('Error adding health goal:', err);
-      Alert.alert('Error', 'Failed to add health goal. Please try again.');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to add health goal. Please check your connection and try again.';
+      setSubmitError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -246,12 +257,14 @@ export default function HealthScreen() {
   const handleCloseModal = () => {
     setShowAddMetricModal(false);
     setFormData({ type: '', value: '', unit: '' });
+    setSubmitError(null);
   };
 
   // Reset goal form when modal closes
   const handleCloseGoalModal = () => {
     setShowAddGoalModal(false);
     setGoalFormData({ title: '', description: '', status: 'not_started' });
+    setSubmitError(null);
   };
 
   // Predefined metric types for the dropdown
@@ -412,20 +425,28 @@ export default function HealthScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.accent]} tintColor={Colors.accent} />}
         showsVerticalScrollIndicator={false}
       >
+      {/* Error Display */}
+      {error && (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity 
+            style={styles.retryButton}
+            onPress={() => {
+              setError(null);
+              if (user?.id) {
+                onRefresh();
+              }
+            }}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Health Tracking</Text>
       </View>
-
-      {/* Error Message */}
-      {error && (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{error}</Text>
-          <FeedbackButton onPress={onRefresh} style={styles.retryButton}>
-            <Text style={styles.retryText}>Retry</Text>
-          </FeedbackButton>
-        </View>
-      )}
 
       {/* Enhanced Period Selector - Segmented Control */}
       <View style={styles.periodSelectorContainer}>
@@ -625,6 +646,13 @@ export default function HealthScreen() {
             </TouchableOpacity>
           </View>
 
+          {/* Submit Error Display */}
+          {submitError && (
+            <View style={styles.submitErrorContainer}>
+              <Text style={styles.submitErrorText}>{submitError}</Text>
+            </View>
+          )}
+
           <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
             {/* Metric Type Selection */}
             <View style={styles.formSection}>
@@ -712,6 +740,13 @@ export default function HealthScreen() {
               </Text>
             </TouchableOpacity>
           </View>
+
+          {/* Submit Error Display */}
+          {submitError && (
+            <View style={styles.submitErrorContainer}>
+              <Text style={styles.submitErrorText}>{submitError}</Text>
+            </View>
+          )}
 
           <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
             {/* Goal Title Input */}
@@ -822,7 +857,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 8,
   },
-  retryText: {
+  retryButtonText: {
     color: Colors.surface,
     fontSize: 12,
     fontWeight: '600',
@@ -1347,5 +1382,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.textSecondary,
     textAlign: 'center',
+  },
+  submitErrorContainer: {
+    backgroundColor: `${Colors.error}${Colors.opacity.light}`,
+    margin: 20,
+    padding: 16,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  submitErrorText: {
+    flex: 1,
+    color: Colors.error,
+    fontSize: 14,
+    fontWeight: '500',
   },
 });
