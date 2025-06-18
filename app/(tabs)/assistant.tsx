@@ -13,30 +13,7 @@ import {
   Switch,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import {
-  Mic,
-  MicOff,
-  Send,
-  Settings,
-  Bookmark,
-  History,
-  Paperclip,
-  Image as ImageIcon,
-  Video,
-  FileText,
-  Zap,
-  Moon,
-  Sun,
-  Volume2,
-  VolumeX,
-  MoreHorizontal,
-  X,
-  ChevronDown,
-  Sparkles,
-  Brain,
-  Coffee,
-  Briefcase,
-} from 'lucide-react-native';
+import { Mic, MicOff, Send, Settings, Bookmark, History, Paperclip, Image as ImageIcon, Video, FileText, Zap, Moon, Sun, Volume2, VolumeX, MoveHorizontal as MoreHorizontal, X, ChevronDown, Sparkles, Brain, Coffee, Briefcase } from 'lucide-react-native';
 
 const { width, height } = Dimensions.get('window');
 
