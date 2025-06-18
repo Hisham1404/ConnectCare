@@ -53,20 +53,9 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="assistant"
-        options={{
-          title: 'AI Assistant',
-          tabBarIcon: ({ color, size }) => (
-            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-              <MessageCircle color={color} size={size} strokeWidth={2} />
-            </View>
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="chat"
         options={{
-          title: 'Health Chat',
+          title: 'AI Assistant',
           tabBarIcon: ({ color, size }) => (
             <View style={{ alignItems: 'center', justifyContent: 'center' }}>
               <MessageCircle color={color} size={size} strokeWidth={2} />
@@ -81,6 +70,17 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => (
             <View style={{ alignItems: 'center', justifyContent: 'center' }}>
               <User color={color} size={size} strokeWidth={2} />
+            </View>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="assistant"
+        options={{
+          title: 'Assistant',
+          tabBarIcon: ({ color, size }) => (
+            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+              <MessageCircle color={color} size={size} strokeWidth={2} />
             </View>
           ),
         }}
