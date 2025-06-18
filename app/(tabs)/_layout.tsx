@@ -74,6 +74,17 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="assistant"
+        options={{
+          title: 'Assistant',
+          tabBarIcon: ({ color, size }) => (
+            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+              <MessageCircle color={color} size={size} strokeWidth={2} />
+            </View>
+          ),
+        }}
+      />
     </Tabs>
   );
 }
