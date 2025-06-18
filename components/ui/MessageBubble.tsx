@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Animated, TouchableOpacity } from 'react-native';
-import { Bookmark, Copy, Share, MoreHorizontal } from 'lucide-react-native';
+import { Bookmark, Copy, Share, MoveHorizontal as MoreHorizontal } from 'lucide-react-native';
 
 interface MessageBubbleProps {
   message: string;
