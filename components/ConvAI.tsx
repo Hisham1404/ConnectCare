@@ -8,7 +8,7 @@ import { View, Pressable, StyleSheet } from 'react-native';
 import tools from '../utils/tools';
 import { useTranscript } from '../context/TranscriptContext';
 import { supabase } from '@/lib/supabase';
-import { useAppGuide } from '@/context/AppGuideContext';
+import { Conversation } from '@/types/models';
 
 async function requestMicrophonePermission() {
   try {
@@ -105,7 +105,6 @@ export default function ConvAiDOMComponent({
   flash_screen: typeof tools.flash_screen;
 }) {
   const { addMessage, clearTranscript, setIsRecording } = useTranscript();
-  const { setIsListening } = useAppGuide();
 
   const onMessage = (message: Message) => {
     console.log('Received message:', message);
@@ -122,23 +121,16 @@ export default function ConvAiDOMComponent({
     agentId: agentId || process.env.EXPO_PUBLIC_ELEVENLABS_AGENT_ID || 'YOUR_AGENT_ID',
     elevenLabsApiKey: process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY || 'YOUR_ELEVENLABS_API_KEY',
     onMessage: onMessage,
-    onStatusChange: (status) => {
-      // Update listening state based on conversation status
-      setIsListening(status === 'connected');
-      setIsRecording(status === 'connected');
-    },
   });
 
   const startConversation = useCallback(async () => {
     clearTranscript(); // Clear previous conversation
     setIsRecording(true);
-    setIsListening(true);
     
     const hasPermission = await requestMicrophonePermission();
     if (!hasPermission) {
       alert('Microphone permission is required.');
       setIsRecording(false);
-      setIsListening(false);
       return;
     }
 
@@ -167,13 +159,12 @@ export default function ConvAiDOMComponent({
       dynamicVariables,
       clientTools: { get_battery_level, change_brightness, flash_screen },
     });
-  }, [conversation, platform, patientId, get_battery_level, change_brightness, flash_screen, clearTranscript, setIsRecording, setIsListening]);
+  }, [conversation, platform, patientId, get_battery_level, change_brightness, flash_screen, clearTranscript, setIsRecording]);
 
   const stopConversation = useCallback(async () => {
     setIsRecording(false);
-    setIsListening(false);
     await conversation.endSession();
-  }, [conversation, setIsRecording, setIsListening]);
+  }, [conversation, setIsRecording]);
 
   return (
     <Pressable
