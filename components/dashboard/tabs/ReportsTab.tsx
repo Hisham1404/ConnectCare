@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { ScrollView, View, Text, StyleSheet, TouchableOpacity, RefreshControl, ActivityIndicator, FlatList, Modal, SafeAreaView } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, TouchableOpacity, RefreshControl, ActivityIndicator, FlatList, Modal, SafeAreaView, Pressable } from 'react-native';
 import { FileText, TrendingUp, TriangleAlert as AlertTriangle, MessageSquare, Clock, User, Bot, ChevronDown, Users, X } from 'lucide-react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useTranscript } from '../../../context/TranscriptContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useConversations } from '@/hooks/useConversations';
 import { supabase } from '@/lib/supabase';
+import { playDemoAudio } from '@/utils/audioPlayer';
 
 interface ReportsTabProps {
   refreshing: boolean;
@@ -168,16 +170,33 @@ export default function ReportsTab({ refreshing, onRefresh }: ReportsTabProps) {
 
   return (
     <View style={{ flex: 1 }}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.title}>Clinical Reports</Text>
+                 {/* Demo Button */}
+         <Pressable 
+           style={styles.demoButton}
+           onPress={() => playDemoAudio('doctor-reports')}
+         >
+          <Ionicons name="play-circle-outline" size={18} color="#3b82f6" />
+          <Text style={styles.demoButtonText}>Demo</Text>
+        </Pressable>
+      </View>
+      
       <ScrollView 
         style={styles.container}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.generateSection}>
-          <Text style={styles.sectionTitle}>Generate Clinical Report</Text>
-          <Text style={styles.sectionDescription}>
-            Generate a comprehensive clinical report including patient AI conversation history and summaries.
-          </Text>
+          <View style={styles.sectionHeader}>
+            <View>
+              <Text style={styles.sectionTitle}>Generate Clinical Report</Text>
+              <Text style={styles.sectionDescription}>
+                Generate a comprehensive clinical report including patient AI conversation history and summaries.
+              </Text>
+            </View>
+          </View>
 
           {/* Patient Selection */}
           {loadingPatients ? (
@@ -402,6 +421,22 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8fafc',
   },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 16,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1f2937',
+  },
   generateSection: {
     padding: 20,
   },
@@ -417,6 +452,27 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     lineHeight: 20,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+  },
+     demoButton: {
+     backgroundColor: '#ffffff',
+     borderRadius: 8,
+     padding: 8,
+     flexDirection: 'row',
+     alignItems: 'center',
+     borderWidth: 1,
+     borderColor: '#e5e7eb',
+   },
+   demoButtonText: {
+     fontSize: 12,
+     color: '#3b82f6',
+     fontWeight: '600',
+     marginLeft: 4,
+   },
   patientSelector: {
     marginBottom: 20,
   },

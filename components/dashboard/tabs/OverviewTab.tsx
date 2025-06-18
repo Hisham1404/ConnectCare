@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { ScrollView, View, Text, StyleSheet, TouchableOpacity, RefreshControl } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, TouchableOpacity, RefreshControl, Pressable } from 'react-native';
 import { TriangleAlert as AlertTriangle, Calendar, TrendingUp, TrendingDown, User } from 'lucide-react-native';
+import { Ionicons } from '@expo/vector-icons';
 import CompactStats from '../CompactStats';
 import { shadow } from '@/utils/shadowStyle';
+import { playDemoAudio, stopDemoAudio } from '@/utils/audioPlayer';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
+import { useFocusEffect } from 'expo-router';
 
 interface OverviewTabProps {
   todaysAppointments: any[];
@@ -49,6 +52,15 @@ export default function OverviewTab({
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Stop audio on blur
+  useFocusEffect(
+    React.useCallback(() => {
+      return () => {
+        stopDemoAudio();
+      };
+    }, [])
+  );
 
   // Fetch doctor's patients and calculate real statistics
   const fetchAndCalculateStats = async () => {
@@ -163,11 +175,25 @@ export default function OverviewTab({
   }
 
   return (
-    <ScrollView 
-      style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing || loading} onRefresh={handleRefresh} />}
-      showsVerticalScrollIndicator={false}
-    >
+    <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.title}>Overview Dashboard</Text>
+                 {/* Demo Button */}
+         <Pressable 
+           style={styles.demoButton}
+           onPress={() => playDemoAudio('doctor-overview')}
+         >
+          <Ionicons name="play-circle-outline" size={18} color="#3b82f6" />
+          <Text style={styles.demoButtonText}>Demo</Text>
+        </Pressable>
+      </View>
+      
+      <ScrollView 
+        style={styles.scrollContainer}
+        refreshControl={<RefreshControl refreshing={refreshing || loading} onRefresh={handleRefresh} />}
+        showsVerticalScrollIndicator={false}
+      >
       {/* Dynamic Statistics */}
       <CompactStats stats={stats} />
 
@@ -186,7 +212,9 @@ export default function OverviewTab({
 
       {/* Real-time Metrics Summary */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Health Metrics Overview</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Health Metrics Overview</Text>
+        </View>
         <View style={styles.metricsGrid}>
           <View style={styles.metricCard}>
             <Text style={styles.metricValue}>{stats.avgHeartRate || '--'}</Text>
@@ -269,12 +297,33 @@ export default function OverviewTab({
           </View>
         </View>
       </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+    backgroundColor: '#f8fafc',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 16,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1f2937',
+  },
+  scrollContainer: {
     flex: 1,
     paddingHorizontal: 20,
   },
@@ -421,5 +470,19 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     fontSize: 16,
     fontWeight: '500',
+  },
+  demoButton: {
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    padding: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    ...shadow(2),
+  },
+  demoButtonText: {
+    color: '#3b82f6',
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 4,
   },
 });

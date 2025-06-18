@@ -1,7 +1,10 @@
 import React from 'react';
-import { View, ScrollView, TextInput, TouchableOpacity, Text, StyleSheet, RefreshControl } from 'react-native';
+import { View, ScrollView, TextInput, TouchableOpacity, Text, StyleSheet, RefreshControl, Pressable } from 'react-native';
 import { Link } from 'expo-router';
 import { Search, Filter, Heart, Activity, Phone, Video, MessageSquare, User, AlertCircle } from 'lucide-react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { playDemoAudio, stopDemoAudio } from '@/utils/audioPlayer';
+import { useFocusEffect } from 'expo-router';
 
 interface PatientsTabProps {
   patients: any[];
@@ -24,6 +27,15 @@ export default function PatientsTab({
   onFilterChange,
   onRefresh
 }: PatientsTabProps) {
+
+  // stop audio on blur
+  useFocusEffect(
+    React.useCallback(() => {
+      return () => {
+        stopDemoAudio();
+      };
+    }, [])
+  );
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -51,6 +63,19 @@ export default function PatientsTab({
 
   return (
     <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.title}>Patients Management</Text>
+                 {/* Demo Button */}
+         <Pressable 
+           style={styles.demoButton}
+           onPress={() => playDemoAudio('doctor-patients')}
+         >
+          <Ionicons name="play-circle-outline" size={18} color="#3b82f6" />
+          <Text style={styles.demoButtonText}>Demo</Text>
+        </Pressable>
+      </View>
+
       {/* Compact Search and Filter */}
       <View style={styles.searchContainer}>
         <View style={styles.searchInputContainer}>
@@ -90,7 +115,7 @@ export default function PatientsTab({
 
       {/* Error Message */}
       {error && (
-        <View style={styles.errorContainer}>
+        <View style={[styles.errorContainer, { marginHorizontal: 20 }]}>
           <AlertCircle color="#ef4444" size={20} />
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity onPress={onRefresh} style={styles.retryButton}>
@@ -102,6 +127,7 @@ export default function PatientsTab({
       {/* Patient List */}
       <ScrollView 
         style={styles.patientList}
+        contentContainerStyle={{ paddingHorizontal: 20 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         showsVerticalScrollIndicator={false}
       >
@@ -198,13 +224,30 @@ export default function PatientsTab({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#f8fafc',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 16,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1f2937',
   },
   searchContainer: {
     flexDirection: 'row',
     gap: 8,
     marginBottom: 8,
     marginTop: 8,
+    paddingHorizontal: 20,
   },
   searchInputContainer: {
     flex: 1,
@@ -242,6 +285,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 6,
     marginBottom: 12,
+    paddingHorizontal: 20,
   },
   filterChip: {
     backgroundColor: '#f3f4f6',
@@ -434,4 +478,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
+     demoButton: {
+     backgroundColor: '#ffffff',
+     borderRadius: 8,
+     padding: 8,
+     flexDirection: 'row',
+     alignItems: 'center',
+   },
+   demoButtonText: {
+     fontSize: 12,
+     color: '#3b82f6',
+     fontWeight: '600',
+     marginLeft: 4,
+   },
 });

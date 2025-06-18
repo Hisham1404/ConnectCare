@@ -10,10 +10,13 @@ import {
   Modal,
   TextInput,
   Alert,
+  Pressable,
 } from 'react-native';
 import { Heart, Activity, Thermometer, Droplets, Weight, Ruler, TrendingUp, TrendingDown, Calendar, Clock, Plus, ChartBar as BarChart3, ChartLine as LineChart, Target, Award, Zap, X } from 'lucide-react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import FeedbackButton from '../../components/ui/FeedbackButton';
+import { playDemoAudio, stopDemoAudio } from '../../utils/audioPlayer';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import { Redirect } from 'expo-router';
@@ -21,6 +24,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import MetricCard from '@/components/health/MetricCard';
 import GoalCard from '@/components/health/GoalCard';
+import { useFocusEffect } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 
@@ -66,6 +70,15 @@ export default function HealthScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { user, loading: authLoading } = useAuth();
+
+  // Stop audio on blur
+  useFocusEffect(
+    React.useCallback(() => {
+      return () => {
+        stopDemoAudio();
+      };
+    }, [])
+  );
 
   // Fetch health metrics from database
   const fetchHealthMetrics = async (userId: string) => {
@@ -420,6 +433,7 @@ export default function HealthScreen() {
 
   return (
     <View style={styles.container}>
+      
       <ScrollView 
         style={styles.container}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.accent]} tintColor={Colors.accent} />}
@@ -446,6 +460,14 @@ export default function HealthScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Health Tracking</Text>
+        {/* Demo Button */}
+        <Pressable 
+          style={styles.demoButton}
+          onPress={() => playDemoAudio('patient-health')}
+        >
+          <Ionicons name="play-circle-outline" size={18} color="#3b82f6" />
+          <Text style={styles.demoButtonText}>Demo</Text>
+        </Pressable>
       </View>
 
       {/* Enhanced Period Selector - Segmented Control */}
@@ -1397,5 +1419,20 @@ const styles = StyleSheet.create({
     color: Colors.error,
     fontSize: 14,
     fontWeight: '500',
+  },
+  demoButton: {
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    padding: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  demoButtonText: {
+    fontSize: 12,
+    color: '#3b82f6',
+    fontWeight: '600',
+    marginLeft: 4,
   },
 });

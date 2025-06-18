@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, TouchableOpacity, Text, StyleSheet, RefreshControl, Dimensions, FlatList } from 'react-native';
+import { View, ScrollView, TouchableOpacity, Text, StyleSheet, RefreshControl, Dimensions, FlatList, Pressable } from 'react-native';
 import { Play, Pause, Heart, Activity, Target, Monitor, User, ChevronDown, TrendingUp } from 'lucide-react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { LineChart } from 'react-native-chart-kit';
 import { supabase } from '@/lib/supabase';
+import { playDemoAudio } from '@/utils/audioPlayer';
+import { stopDemoAudio } from '@/utils/audioPlayer';
+import { useFocusEffect } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 
@@ -60,6 +64,15 @@ export default function MonitoringTab({
 
   // Available metric types for visualization
   const metricTypes = ['Heart Rate', 'Blood Pressure', 'Temperature', 'Oxygen Level'];
+
+  // stop audio on blur
+  useFocusEffect(
+    React.useCallback(() => {
+      return () => {
+        stopDemoAudio();
+      };
+    }, [])
+  );
 
   // Fetch health metrics for selected patient
   const fetchHealthMetrics = async (patientId: string, metricType: string) => {
@@ -407,26 +420,41 @@ export default function MonitoringTab({
 
   return (
     <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.title}>Health Monitoring</Text>
+        {/* Demo Button */}
+        <Pressable 
+          style={styles.demoButton}
+          onPress={() => playDemoAudio('doctor-monitoring')}
+        >
+          <Ionicons name="play-circle-outline" size={18} color="#3b82f6" />
+          <Text style={styles.demoButtonText}>Demo</Text>
+        </Pressable>
+      </View>
+      
       {/* Header Controls */}
       <View style={styles.headerSection}>
         <View style={styles.monitoringHeader}>
           <Text style={styles.monitoringTitle}>Patient Health Monitoring</Text>
-          <TouchableOpacity
-            style={[
-              styles.monitoringToggle,
-              { backgroundColor: isMonitoring ? '#ef4444' : '#10b981' }
-            ]}
-            onPress={onToggleMonitoring}
-          >
-            {isMonitoring ? (
-              <Pause color="#ffffff" size={14} />
-            ) : (
-              <Play color="#ffffff" size={14} />
-            )}
-            <Text style={styles.monitoringToggleText}>
-              {isMonitoring ? 'Stop' : 'Start'}
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.headerButtons}>
+            <TouchableOpacity
+              style={[
+                styles.monitoringToggle,
+                { backgroundColor: isMonitoring ? '#ef4444' : '#10b981' }
+              ]}
+              onPress={onToggleMonitoring}
+            >
+              {isMonitoring ? (
+                <Pause color="#ffffff" size={14} />
+              ) : (
+                <Play color="#ffffff" size={14} />
+              )}
+              <Text style={styles.monitoringToggleText}>
+                {isMonitoring ? 'Stop' : 'Start'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Patient Selection */}
@@ -595,6 +623,22 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8fafc',
   },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 16,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1f2937',
+  },
   headerSection: {
     backgroundColor: '#ffffff',
     padding: 20,
@@ -625,6 +669,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+     demoButton: {
+     backgroundColor: '#ffffff',
+     borderRadius: 8,
+     padding: 8,
+     flexDirection: 'row',
+     alignItems: 'center',
+     borderWidth: 1,
+     borderColor: '#e5e7eb',
+   },
+   demoButtonText: {
+     fontSize: 12,
+     color: '#3b82f6',
+     fontWeight: '600',
+     marginLeft: 4,
+   },
   patientSelectorContainer: {
     marginBottom: 16,
   },

@@ -3,6 +3,7 @@ import { useState, useEffect, createContext, useContext } from 'react';
 import { Session, User, AuthError } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { Profile } from '@/types/models';
+import { storage } from '../lib/storage';
 
 interface AuthContextType {
   session: Session | null;
@@ -131,10 +132,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
+      // Attempt local sign-out (valid for anon key)
+      const { error } = await supabase.auth.signOut({ scope: 'local' });
+
+      // If Supabase returns a 403/401 (can happen on web if refresh token is already invalid),
+      // fall back to simply clearing the stored session so the user is effectively logged out.
+      if (error?.status === 403 || error?.status === 401) {
+        console.warn('Supabase signOut returned', error.message, '- falling back to local session purge');
+
+        // Manually clear storage (both AsyncStorage and in-memory) to remove session tokens
+        try {
+          await storage.removeItem('supabase.auth.token'); // custom key if used
+        } catch (_) {}
+
+        // Force Supabase client to forget the current session
+        supabase.auth._removeSession(); // eslint-disable-line @typescript-eslint/ban-ts-comment
+        // _removeSession is internal but safe here – clears in-memory session cache
+
+        setSession(null);
+      }
+
       setProfile(null);
-      return { error };
+      return { error: null };
     } catch (error) {
+      // Ignore 403/401 errors that bubble up here and still reset local state
+      console.error('Unexpected signOut error', error);
+      setSession(null);
+      setProfile(null);
       return { error: error as AuthError };
     }
   };

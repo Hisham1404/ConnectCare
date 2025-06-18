@@ -11,10 +11,13 @@ import {
   FlatList,
   LogBox,
   Platform,
+  Pressable,
 } from 'react-native';
 import { Pill, Heart, Activity, Calendar, Clock, User, TrendingUp, CircleAlert as AlertCircle, CircleCheck as CheckCircle, Apple, Dumbbell, Thermometer, Droplets, Zap, Target, Award, Bell, Phone, Video, MessageSquare, Plus, ChevronRight, ArrowLeft } from 'lucide-react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Colors, SemanticColors } from '../../constants/Colors';
+import { playDemoAudio, stopDemoAudio } from '../../utils/audioPlayer';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import FeedbackButton from '../../components/ui/FeedbackButton';
@@ -22,6 +25,7 @@ import { shadow, textShadow } from '@/utils/shadowStyle';
 import { useAuth } from '../../hooks/useAuth';
 import { patients } from '@/mock/data';
 import { supabase } from '@/lib/supabase';
+import { useFocusEffect } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 
@@ -58,6 +62,15 @@ export default function PatientDashboard() {
   const [nextAppointment, setNextAppointment] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const { profile, loading } = useAuth();
+
+  // Stop playing audio when navigating away from this tab
+  useFocusEffect(
+    React.useCallback(() => {
+      return () => {
+        stopDemoAudio();
+      };
+    }, [])
+  );
 
   // Fetch health metrics from database
   const fetchHealthMetrics = async (userId: string) => {
@@ -652,11 +665,13 @@ export default function PatientDashboard() {
   );
 
   return (
-    <ScrollView 
-      style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      showsVerticalScrollIndicator={false}
-    >
+    <View style={styles.container}>
+      
+      <ScrollView 
+        style={styles.container}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        showsVerticalScrollIndicator={false}
+      >
       {/* Error Display */}
       {error && (
         <View style={styles.errorContainer}>
@@ -716,6 +731,15 @@ export default function PatientDashboard() {
           </View>
           
           <View style={styles.headerRight}>
+            {/* Demo Button */}
+            <Pressable 
+              style={styles.demoButton}
+              onPress={() => playDemoAudio('patient-dashboard')}
+            >
+              <Ionicons name="play-circle-outline" size={18} color="#3b82f6" />
+              <Text style={styles.demoButtonText}>Demo</Text>
+            </Pressable>
+            
             <FeedbackButton
               onPress={() => console.log('Notifications pressed')}
               style={styles.notificationButton}
@@ -1083,6 +1107,7 @@ export default function PatientDashboard() {
         </View>
       </View>
     </ScrollView>
+    </View>
   );
 }
 
@@ -1719,5 +1744,21 @@ const styles = StyleSheet.create({
     color: Colors.surface,
     fontSize: 12,
     fontWeight: '600',
+  },
+  demoButton: {
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    padding: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    marginRight: 12,
+  },
+  demoButtonText: {
+    fontSize: 12,
+    color: '#3b82f6',
+    fontWeight: '600',
+    marginLeft: 4,
   },
 });
