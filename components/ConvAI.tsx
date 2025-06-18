@@ -91,6 +91,7 @@ async function fetchLastConversationSummary(patientId: string): Promise<string |
 export default function ConvAiDOMComponent({
   platform,
   patientId,
+  agentId,
   get_battery_level,
   change_brightness,
   flash_screen,
@@ -98,6 +99,7 @@ export default function ConvAiDOMComponent({
   dom?: import('expo/dom').DOMProps;
   platform: string;
   patientId?: string;
+  agentId?: string;
   get_battery_level: typeof tools.get_battery_level;
   change_brightness: typeof tools.change_brightness;
   flash_screen: typeof tools.flash_screen;
@@ -116,7 +118,7 @@ export default function ConvAiDOMComponent({
   };
 
   const conversation = useConversation({
-    agentId: process.env.EXPO_PUBLIC_ELEVENLABS_AGENT_ID || 'YOUR_AGENT_ID',
+    agentId: agentId || process.env.EXPO_PUBLIC_ELEVENLABS_AGENT_ID || 'YOUR_AGENT_ID',
     elevenLabsApiKey: process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY || 'YOUR_ELEVENLABS_API_KEY',
     onMessage: onMessage,
   });
