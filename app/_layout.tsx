@@ -2,16 +2,18 @@ import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, Pressable, StyleSheet } from 'react-native';
-import { MessageCircle } from 'lucide-react-native';
+import { Stethoscope } from 'lucide-react-native';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { AuthProvider } from '@/hooks/useAuth';
 import { TranscriptProvider } from '@/context/TranscriptContext';
 import { AppGuideProvider, useAppGuide } from '@/context/AppGuideContext';
 import { AppGuideAgent } from '@/components/AppGuideAgent';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function RootLayoutNav() {
   const { toggleGuide } = useAppGuide();
+  const insets = useSafeAreaInsets();
 
   return (
     <>
@@ -24,8 +26,17 @@ function RootLayoutNav() {
       </Stack>
       
       {/* Floating Button for AI Guide */}
-      <Pressable style={styles.floatingButton} onPress={toggleGuide}>
-        <MessageCircle size={24} color="#FFFFFF" strokeWidth={2} />
+      <Pressable
+        style={[
+          styles.floatingButton,
+          {
+            bottom: Math.max(insets.bottom, 16) + 72, // nav height 56 + margin
+            right: 20,
+          },
+        ]}
+        onPress={toggleGuide}
+      >
+        <Stethoscope size={24} color="#FFFFFF" strokeWidth={2} />
       </Pressable>
       
       {/* AI Guide Agent - Always rendered, visibility controlled internally */}
@@ -55,8 +66,6 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   floatingButton: {
     position: 'absolute',
-    bottom: 30,
-    right: 30,
     width: 56,
     height: 56,
     borderRadius: 28,

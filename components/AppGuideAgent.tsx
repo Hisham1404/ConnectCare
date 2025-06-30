@@ -1,15 +1,17 @@
 import React from 'react';
 import { View, StyleSheet, Dimensions, Text, Pressable } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { X, Minus, MessageCircle } from 'lucide-react-native';
+import { X, Minus, Stethoscope } from 'lucide-react-native';
 import { useAppGuide } from '@/context/AppGuideContext';
 import ConvAI from './ConvAI';
 import tools from '@/utils/tools';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
 
 export const AppGuideAgent: React.FC = () => {
   const { isGuideVisible, isMinimized, minimizeGuide, expandGuide, closeGuide } = useAppGuide();
+  const insets = useSafeAreaInsets();
 
   if (!isGuideVisible) {
     return null;
@@ -51,10 +53,19 @@ export const AppGuideAgent: React.FC = () => {
 
       {/* Minimized bubble rendered only when minimized */}
       {isMinimized && (
-        <Pressable style={styles.minimizedContainer} onPress={expandGuide}>
+        <Pressable
+          style={[
+            styles.minimizedContainer,
+            {
+              bottom: Math.max(insets.bottom, 16) + 72, // 72 ≈ nav height + spacing
+              right: 20,
+            },
+          ]}
+          onPress={expandGuide}
+        >
           <BlurView intensity={80} style={styles.minimizedBlur}>
             <View style={styles.minimizedContent}>
-              <MessageCircle size={20} color="#3B82F6" strokeWidth={2} />
+              <Stethoscope size={20} color="#3B82F6" strokeWidth={2} />
               <Text style={styles.minimizedText}>Carey</Text>
             </View>
           </BlurView>
@@ -133,8 +144,6 @@ const styles = StyleSheet.create({
   // Minimized state styles
   minimizedContainer: {
     position: 'absolute',
-    bottom: 100, // Above the floating button
-    right: 30,
     zIndex: 9998,
   },
   minimizedBlur: {
