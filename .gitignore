@@ -38,3 +38,5 @@ yarn-error.*
 .yoyo/
 
 .vercel
+BUILD_AND_DEPLOY_GUIDE.md
+.gitignore
