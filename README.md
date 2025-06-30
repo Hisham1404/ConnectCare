@@ -93,12 +93,12 @@
 ### **Demo Credentials**
 ```
 👤 Patient Account
-Email: demo.patient@connectcare.ai
-Password: Demo2024!
+Email: vnwxrturqs@vwhins.com
+Password: hi@12345
 
 👨‍⚕️ Doctor Account  
-Email: demo.doctor@connectcare.ai
-Password: Demo2024!
+Email: yrln7tacd5@daouse.com
+Password: hi@12345
 ```
 
 ---
