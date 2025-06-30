@@ -36,3 +36,5 @@ yarn-error.*
 
 # YoYo AI version control directory
 .yoyo/
+
+.vercel
